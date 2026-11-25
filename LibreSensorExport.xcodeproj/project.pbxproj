@@ -1,0 +1,316 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		459C4347197662DD1ABC9EE4 /* Libre2FRAM.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AC8E29365578380136B3A2D /* Libre2FRAM.swift */; };
+		5281804A2EC9A5D47D1C7F66 /* SensorExportApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C585FD214D3C3182DDC2683 /* SensorExportApp.swift */; };
+		AFD049CF302AA6788083FADD /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17AAC495FA295892A6C117A /* ContentView.swift */; };
+		BF91077E3CD43B4A69BAF99E /* SensorParse.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD53C2E28BA964B2791F6808 /* SensorParse.swift */; };
+		F8AC50EEEC959A1E191FDFF4 /* TablesData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A257889CE8315E4251EFCF0D /* TablesData.swift */; };
+		F9C57B3E46E2E2C273CF73CB /* NFCReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75A7B585CD6C540E5D03CEAB /* NFCReader.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		3D0F0D1AE86179C9083CFDD0 /* LibreSensorExport.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = LibreSensorExport.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		75A7B585CD6C540E5D03CEAB /* NFCReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NFCReader.swift; sourceTree = "<group>"; };
+		8C585FD214D3C3182DDC2683 /* SensorExportApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorExportApp.swift; sourceTree = "<group>"; };
+		9AC8E29365578380136B3A2D /* Libre2FRAM.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Libre2FRAM.swift; sourceTree = "<group>"; };
+		A257889CE8315E4251EFCF0D /* TablesData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TablesData.swift; sourceTree = "<group>"; };
+		AD53C2E28BA964B2791F6808 /* SensorParse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorParse.swift; sourceTree = "<group>"; };
+		C17AAC495FA295892A6C117A /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		4E1F03CB9BDBB705C90FC270 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				C17AAC495FA295892A6C117A /* ContentView.swift */,
+				9AC8E29365578380136B3A2D /* Libre2FRAM.swift */,
+				75A7B585CD6C540E5D03CEAB /* NFCReader.swift */,
+				8C585FD214D3C3182DDC2683 /* SensorExportApp.swift */,
+				AD53C2E28BA964B2791F6808 /* SensorParse.swift */,
+				A257889CE8315E4251EFCF0D /* TablesData.swift */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		592254C9FEBD17A3EC275B51 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				3D0F0D1AE86179C9083CFDD0 /* LibreSensorExport.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		9B5BBDBD733FF00ABE4F6455 = {
+			isa = PBXGroup;
+			children = (
+				4E1F03CB9BDBB705C90FC270 /* Sources */,
+				592254C9FEBD17A3EC275B51 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		95F61C41DB244C00EDE92F62 /* LibreSensorExport */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DEE9EF1454E5881739AF92AA /* Build configuration list for PBXNativeTarget "LibreSensorExport" */;
+			buildPhases = (
+				7A91A30CB9F2D7060CBF6BA4 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LibreSensorExport;
+			packageProductDependencies = (
+			);
+			productName = LibreSensorExport;
+			productReference = 3D0F0D1AE86179C9083CFDD0 /* LibreSensorExport.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		6E96E7C6ACBFDF7DF9248076 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					95F61C41DB244C00EDE92F62 = {
+						DevelopmentTeam = YOURTEAMID;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 64BD849521E51906786A70E3 /* Build configuration list for PBXProject "LibreSensorExport" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 9B5BBDBD733FF00ABE4F6455;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 592254C9FEBD17A3EC275B51 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				95F61C41DB244C00EDE92F62 /* LibreSensorExport */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		7A91A30CB9F2D7060CBF6BA4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AFD049CF302AA6788083FADD /* ContentView.swift in Sources */,
+				459C4347197662DD1ABC9EE4 /* Libre2FRAM.swift in Sources */,
+				F9C57B3E46E2E2C273CF73CB /* NFCReader.swift in Sources */,
+				5281804A2EC9A5D47D1C7F66 /* SensorExportApp.swift in Sources */,
+				BF91077E3CD43B4A69BAF99E /* SensorParse.swift in Sources */,
+				F8AC50EEEC959A1E191FDFF4 /* TablesData.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		17E252F813F107F7546CA70E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		2232765F0731C87F74015C82 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		7F8B27464C83AB2B1C1277A6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Generated/LibreSensorExport.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = YOURTEAMID;
+				INFOPLIST_FILE = Generated/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = org.libresensorexport.app;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		8689B5A80D4CDE98DD28E70C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Generated/LibreSensorExport.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = YOURTEAMID;
+				INFOPLIST_FILE = Generated/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = org.libresensorexport.app;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		64BD849521E51906786A70E3 /* Build configuration list for PBXProject "LibreSensorExport" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2232765F0731C87F74015C82 /* Debug */,
+				17E252F813F107F7546CA70E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		DEE9EF1454E5881739AF92AA /* Build configuration list for PBXNativeTarget "LibreSensorExport" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8689B5A80D4CDE98DD28E70C /* Debug */,
+				7F8B27464C83AB2B1C1277A6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 6E96E7C6ACBFDF7DF9248076 /* Project object */;
+}
