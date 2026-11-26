@@ -35,7 +35,6 @@ struct Export {
         (try? JSONSerialization.data(withJSONObject: payload, options: [.sortedKeys, .prettyPrinted])) ?? Data()
     }
     var base64: String { json.base64EncodedString() }
-    var generation: Int { patch.generation }
 
     /// Parsed and all CRCs match. Values from a FRAM that fails its CRCs are likely garbage
     /// (e.g. a batch that changed its encryption), so the reading, chart and dates are hidden.
@@ -45,6 +44,24 @@ struct Export {
     /// Header and footer CRCs match: the scheme is right. The body changes every minute, so a body
     /// mismatch alone usually means the read overlapped an update.
     var decrypts: Bool { parsed.map { $0.headerCRC.ok && $0.footerCRC.ok } ?? false }
+
+    /// The summary line, naming an unencrypted sensor without patch info as the Libre 1 it is.
+    var summary: String { patch.raw.isEmpty && encryption == .none ? "Libre 1 · no patch info" : patch.summary }
+
+    /// What this scan means for LibreTransmitter, in one line.
+    var ltVerdict: String {
+        if patch.isLibre3 { return "Libre 3: not read over NFC by LibreTransmitter" }
+        if patch.generation == 2 { return "Gen2: needs the authenticated read" }
+        if encryption == .notRead || encryption == .undecryptable { return "can't tell without the memory" }
+        let today = patch.sensorType != "Unknown", withPR = patch.sensorTypePR67 != "Unknown"
+        let reads = encryption == .none || decrypts
+        switch (today, withPR, reads) {
+        case (true, _, true): return "works today"
+        case (false, true, true): return "works with PR #67"
+        case (_, true, false): return "type accepted, but it doesn't decrypt: PR #67 alone won't make it work"
+        default: return "not supported"
+        }
+    }
 
     /// Whether the FRAM decrypted with the first-generation scheme (what LibreTransmitter#67 needs).
     var cryptoSummary: String {
@@ -87,10 +104,11 @@ func makeExport(_ r: ScanResult) -> Export {
     var encryption = FramEncryption.notRead
     var fram: [UInt8] = []
     let raw = r.framEncrypted
-    if raw.count >= 344 {
+    if raw.count >= FRAMLayout.size {
         // header and footer only: the body changes every minute and can fail when a read overlaps an update
-        let plain = Libre2FRAM.crcCheck(raw[0..<24]).ok && Libre2FRAM.crcCheck(raw[320..<344]).ok
-        if plain {
+        let plain = Libre2FRAM.crcCheck(raw[FRAMLayout.header]).ok && Libre2FRAM.crcCheck(raw[FRAMLayout.footer]).ok
+        // never decrypt a Libre 1 or Pro: their memory isn't encrypted (a CRC failure is just that)
+        if plain || patch.sensorType == "Libre 1" || patch.isLibrePro {
             encryption = .none; fram = raw
         } else if let dec = Libre2FRAM.decryptFRAM(id: r.uid, info: r.patchInfo, data: raw) {
             encryption = Libre2FRAM.isLibre2(r.patchInfo) ? .libre2 : .us14day; fram = dec
@@ -124,7 +142,7 @@ func makeExport(_ r: ScanResult) -> Export {
     tag["system_info_error"] = r.tag.systemInfoError
     tag["block_security"] = r.tag.blockSecurity
     tag["block_security_error"] = r.tag.blockSecurityError
-    if let extra = r.tag.extraMemory { tag["extra_memory_hex"] = hex(extra); tag["extra_memory_from_block"] = 43 }
+    if let extra = r.tag.extraMemory { tag["extra_memory_hex"] = hex(extra); tag["extra_memory_from_block"] = FRAMLayout.blocks }
     tag["extra_memory_note"] = r.tag.extraMemoryNote
 
     var patchDecoded: [String: Any] = ["sensor_type": patch.sensorType, "sensor_type_pr67": patch.sensorTypePR67,
@@ -133,6 +151,9 @@ func makeExport(_ r: ScanResult) -> Export {
     patchDecoded["security"] = patch.securityNibble
     patchDecoded["region_code"] = patch.regionCode
     patchDecoded["crypto_word"] = patch.cryptoWord
+    if patch.isLibre3 {   // the Libre 2 decoding of these bytes means nothing for a Libre 3
+        for key in ["generation", "family", "security", "region_code", "crypto_word"] { patchDecoded[key] = nil }
+    }
 
     var payload: [String: Any] = [
         "format": "libre2-fram-export-v1",
@@ -150,6 +171,8 @@ func makeExport(_ r: ScanResult) -> Export {
         "history_records": records(parsed?.history ?? []),
     ]
     payload["patch_info_error"] = r.patchInfoError
+    payload["app_version"] = appVersion()
+    if patch.isLibre3 { payload["generation"] = nil }
     if !raw.isEmpty { payload["decrypts_gen1"] = encryption == .libre2 && (parsed.map { $0.headerCRC.ok && $0.footerCRC.ok } ?? false) }
     if let p = parsed {
         payload["sensor_state"] = p.state
@@ -186,7 +209,7 @@ func makeReport(_ e: Export) -> String {
         lines.append("Byte 0 \(Hex.byte(Int(b0))) · family \(f) (\(p.familyName)) · security version \(sec) → \(p.generationShort) · region \(p.regionName)\(p.regionCode.map { " (\(Hex.byte($0)))" } ?? "")")
     }
     if let err = e.result.patchInfoError { lines.append("Patch info not answered: \(err)") }
-    lines.append("LibreTransmitter type: \(p.sensorType) (main) · \(p.sensorTypePR67) (PR #67)")
+    lines.append("LibreTransmitter type: \(p.sensorType) (main) · \(p.sensorTypePR67) (PR #67) · verdict: \(e.ltVerdict)")
     lines.append("\(e.encryption == .libre2 || e.encryption == .us14day ? "Decryption tried" : "FRAM encryption"): \(e.encryption.label) · Gen1 crypto: \(e.cryptoSummary)")
     if let s = e.parsed, e.trustworthy {
         // age to the hour: with the scan date it doesn't pin down the exact start minute
@@ -199,10 +222,15 @@ func makeReport(_ e: Export) -> String {
     if let si = t.systemInfo { chip += " · \(si.totalBlocks) blocks × \(si.blockSize) bytes · IC ref \(si.icReference < 0 ? "–" : Hex.byte(si.icReference))" }
     lines.append(chip)
     lines.append("Scanned: \(e.result.scannedAt.formatted(.iso8601.year().month().day()))")
-    let info = Bundle.main.infoDictionary
     let os = ProcessInfo.processInfo.operatingSystemVersion
-    lines.append("App: Libre Export \(info?["CFBundleShortVersionString"] as? String ?? "?") (\(info?["CFBundleVersion"] as? String ?? "?")) · iOS \(os.majorVersion).\(os.minorVersion).\(os.patchVersion) · \(deviceModel())")
+    lines.append("App: Libre Export \(appVersion()) · iOS \(os.majorVersion).\(os.minorVersion).\(os.patchVersion) · \(deviceModel())")
     return lines.joined(separator: "\n")
+}
+
+/// "1.2 (3)", from the bundle.
+func appVersion() -> String {
+    let info = Bundle.main.infoDictionary
+    return "\(info?["CFBundleShortVersionString"] as? String ?? "?") (\(info?["CFBundleVersion"] as? String ?? "?"))"
 }
 
 /// Hardware model identifier, e.g. "iPhone17,1" (no name or other identifier of the user).

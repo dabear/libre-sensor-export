@@ -80,9 +80,10 @@ cd libre-sensor-export
 ./scripts/install.sh
 ```
 
-The script finds your team ID (from the development certificate Xcode created
-when you signed in) and your connected iPhone, then builds, installs and opens the
-app. The first build takes a minute or two.
+The script checks Xcode, finds your paid team (from the account you signed in to
+Xcode with) and your connected iPhone, registers the iPhone with your team if
+needed, then builds, installs and opens the app. The first build takes a minute
+or two.
 
 **First launch only:** iOS asks you to trust the developer. On the iPhone go to
 Settings → General → VPN & Device Management → your Apple ID → **Trust**, then open
@@ -95,8 +96,9 @@ keeps the app, only the code is replaced.
 ### If something goes wrong
 | Message | Fix |
 |---|---|
-| *No Apple Development certificate found* | Xcode → Settings → Accounts → select your Apple ID → Manage Certificates → **+** → Apple Development. Or pass your team ID: `./scripts/install.sh AB12CD34EF` (find it at developer.apple.com → Account → Membership details). |
-| *You have several teams* | Run `./scripts/install.sh <TEAM ID>` with the paid team. |
+| *Xcode isn't selected* / *isn't set up yet* | Run the command the script prints (`sudo xcode-select -s …` or `sudo xcodebuild -runFirstLaunch`), or open Xcode once. |
+| *No paid Apple Developer team found* | Xcode → Settings → Accounts → **+** → Apple ID of your paid membership. Free accounts can't sign NFC apps. Or pass your team ID: `./scripts/install.sh AB12CD34EF` (developer.apple.com → Account → Membership details). |
+| *You have several teams* | The script lists them by name; run `./scripts/install.sh <TEAM ID>` with the one to use. |
 | *No iPhone found* | Unlock the phone, reconnect the cable, tap Trust. |
 | *Several iPhones connected* | `DEVICE=<udid> ./scripts/install.sh` with a UDID from the list it prints. |
 | *Developer Mode is off* | See step 3 of the one-time setup. |
@@ -137,12 +139,15 @@ Made for confirming [LibreTransmitter#67](https://github.com/LoopKit/LibreTransm
 **Patch info** card:
 
 - **Raw** starts `84 0E 30 01`, **Family** 3, **Security ver** 0 → Gen1, **Region** Europe.
-- **LT type**: *Unknown (main)* and *Libre 2 (PR #67)*, i.e. today's
-  LibreTransmitter rejects it and the PR accepts it.
+- Under **LibreTransmitter**: *Type today* Unknown and *With PR #67* Libre 2, i.e.
+  today's LibreTransmitter rejects it and the PR accepts it; *Verdict* sums it up
+  ("works with PR #67").
 - **Gen1 crypto: yes, all CRCs match** is what the PR couldn't test: the batch still
   uses the first-generation encryption LibreTransmitter decrypts. The app decrypts by
   family, not by LibreTransmitter's type list, so it tries even when *main* says
-  Unknown. *No, CRCs don't match* would mean the PR alone won't make these sensors work.
+  Unknown. *No, CRCs don't match* would mean the PR alone won't make these sensors work;
+  *yes; body CRC mismatch, scan again* means the scheme is right but the read
+  overlapped a memory update.
 - Compare the glucose with the Libre app or reader.
 
 Then tap **Copy report** (Overview, at the bottom) and paste it into the PR: it
@@ -153,7 +158,9 @@ the sensor's identity.
 Base64 of a JSON object: `uid`, `patch_info`, `generation`, `fram_encrypted_hex`,
 `fram_decrypted_hex`, `minutes_since_start`, `calibration{i1..i6}`, and
 `trend_records[{minute, raw_glucose, raw_temperature, raw_temperature_adjustment}]`.
-The `trend_records` feed directly into the independent-implementation harness.
+The `trend_records` are the raw inputs (glucose, temperature and adjustment per
+minute) that a separate glucose implementation needs, e.g. to compare its values with
+this app's or the Libre app's.
 
 Added later, same format name (readers of the fields above are unaffected):
 `scanned_at` (time of the FRAM read), `serial`,
@@ -174,7 +181,8 @@ block from 0, bit 0 = locked), `block_security_error`, `extra_memory_hex`,
 `extra_memory_from_block` and `extra_memory_note` (with *Read all memory*).
 
 Version 1.2 adds `crc_ok` (all three CRCs match) and leaves out `started_at` and
-`ends_at` for a sensor that hasn't started.
+`ends_at` for a sensor that hasn't started. Version 1.3 adds `app_version` and
+leaves out the Libre 2 decoding (`generation`, `family`, …) for a Libre 3.
 
 ## Notes
 - **Demo mode:** the Simulator has no NFC. A Debug build launched with the

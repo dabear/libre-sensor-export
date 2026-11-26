@@ -8,8 +8,9 @@ struct HeroCard: View {
     let export: Export?; let scanning: Bool; let status: String
     /// Opened from saved scans (or restored at launch), not just scanned.
     var saved = false
-    @AppStorage("glucoseUnit") private var unit: GlucoseUnit = .regionDefault
+    @AppStorage(GlucoseUnit.storageKey) private var unit: GlucoseUnit = .regionDefault
     @ScaledMetric(relativeTo: .largeTitle) private var valueSize: CGFloat = 64
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         VStack(spacing: 8) {
@@ -26,10 +27,10 @@ struct HeroCard: View {
                     Image(systemName: e.parsed == nil ? "sensor.tag.radiowaves.forward.fill" : "exclamationmark.triangle.fill")
                         .font(.system(size: 48)).foregroundStyle(e.parsed == nil ? Color.accentColor : .orange)
                         .accessibilityHidden(true)
-                    Text(e.serial == "–" ? e.patch.summary : e.serial).font(.title2.weight(.semibold).monospaced())
-                    if e.serial != "–" { Text(e.patch.summary).font(.subheadline).foregroundStyle(.secondary) }
+                    Text(e.serial == "–" ? e.summary : e.serial).font(.title2.weight(.semibold).monospaced())
+                    if e.serial != "–" { Text(e.summary).font(.subheadline).foregroundStyle(.secondary) }
                     if e.parsed != nil {
-                        Text("CRCs don't match: no reading shown").font(.subheadline.weight(.medium)).foregroundStyle(.orange)
+                        Text("CRCs don't match: no reading shown").font(.subheadline.weight(.medium)).foregroundStyle(Color.warnText)
                     }
                     ScannedAgo(date: e.result.scannedAt).font(.footnote).foregroundStyle(.secondary)
                 }
@@ -55,21 +56,27 @@ struct HeroCard: View {
         // A sensor that has ended (expired, shut down, failed) keeps its last stored values.
         let ended = p.state >= 4
         if let g = newest?.glucose {
+          // re-checked every minute: a scan left open stops looking live after 15 minutes
+          TimelineView(.periodic(from: .now, by: 60)) { context in
             let arrow = trendArrow(p.trendRate)
-            // grey, no arrow: not a live reading (ended, saved scan, or still warming up)
-            let dim = ended || saved || p.warmupMinutesLeft != nil
+            let stale = !saved && context.date.timeIntervalSince(e.result.scannedAt) > 15 * 60
+            // grey, no arrow: not a live reading (ended, saved, old, or still warming up)
+            let dim = ended || saved || stale || p.warmupMinutesLeft != nil
             let color = dim ? Color.secondary : glucoseColor(g)
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
+            let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: 2))
+                                                      : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: 8))
+            VStack(spacing: 8) {
+            layout {
                 Text(unit.format(g)).font(.system(size: valueSize, weight: .bold, design: .rounded))
                     .foregroundStyle(color).lineLimit(1).minimumScaleFactor(0.5)
                 Text(unit.label).font(.title3.weight(.medium)).foregroundStyle(.secondary)
                 if !dim { Image(systemName: arrow.symbol).font(.title).foregroundStyle(color) }
                 if let bits = newest?.errorBits, bits != 0 {
-                    Image(systemName: "exclamationmark.triangle.fill").font(.title3).foregroundStyle(.orange)
+                    Image(systemName: "exclamationmark.triangle.fill").font(.title3).foregroundStyle(Color.warnText)
                 }
             }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("\(unit.format(g)) \(unit.spoken), \(ended ? "last stored reading" : saved ? "saved scan" : p.warmupMinutesLeft != nil ? "warming up" : arrow.words)\(newest?.errorBits ?? 0 != 0 ? ", with quality flags" : "")")
+            .accessibilityLabel("\(unit.format(g)) \(unit.spoken), \(ended ? "last stored reading" : saved ? "saved scan" : stale ? "not current" : p.warmupMinutesLeft != nil ? "warming up" : arrow.words)\(newest?.errorBits ?? 0 != 0 ? ", with quality flags: \(SensorLabels.measurementErrors(newest!.errorBits).joined(separator: ", "))" : "")")
             if ended {
                 Text("Sensor \(SensorLabels.state(p.state).lowercased()): last stored reading")
                     .font(.footnote.weight(.medium)).foregroundStyle(.secondary)
@@ -77,7 +84,17 @@ struct HeroCard: View {
                 ScannedAgo(date: e.result.scannedAt,
                            prefix: p.trendRate.map { "\(unit.formatRate($0)) \(unit.label)/min · " } ?? "")
                     .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                if stale {
+                    Text("Not current: scan again for a live value").font(.footnote.weight(.medium))
+                        .foregroundStyle(.secondary)
+                }
             }
+            if let bits = newest?.errorBits, bits != 0 {
+                Text("Newest reading flagged: \(SensorLabels.measurementErrors(bits).joined(separator: ", "))")
+                    .font(.footnote).foregroundStyle(Color.warnText).multilineTextAlignment(.center)
+            }
+            }
+          }
         } else {
             Image(systemName: "drop.degreesign.slash").font(.system(size: 44)).foregroundStyle(.secondary)
                 .accessibilityHidden(true)
@@ -85,16 +102,17 @@ struct HeroCard: View {
             ScannedAgo(date: e.result.scannedAt).font(.footnote).foregroundStyle(.secondary)
         }
         Text("\(p.serial) · \(p.ageHuman)").font(.subheadline).foregroundStyle(.secondary)
-        Text(e.patch.summary).font(.subheadline).foregroundStyle(.secondary)
+            .accessibilityLabel("Serial \(p.serial), age \(spoken(p.ageHuman))")
+        Text(e.summary).font(.subheadline).foregroundStyle(.secondary)
         if let w = p.warmupMinutesLeft {
             Label("Warming up: ready in \(w) min\(saved ? " (at scan time)" : "")", systemImage: "hourglass")
-                .font(.subheadline.weight(.medium)).foregroundStyle(.orange)
+                .font(.subheadline.weight(.medium)).foregroundStyle(Color.warnText)
         } else if p.state == 1 {
             Label("Not started: activate it with the Libre app or reader", systemImage: "play.circle")
                 .font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
         } else if let x = p.expiredMinutesAgo {
             Label("Expired \(ParsedSensor.human(x)) before the scan", systemImage: "clock.badge.xmark")
-                .font(.subheadline.weight(.medium)).foregroundStyle(.red)
+                .font(.subheadline.weight(.medium)).foregroundStyle(Color.badText)
         }
     }
 }
@@ -116,20 +134,24 @@ struct ScannedAgo: View {
 struct CRCRow: View {
     let p: ParsedSensor
     var body: some View {
-        HStack(spacing: 10) {
-            chip("Header", p.headerCRC.ok); chip("Body", p.bodyCRC.ok); chip("Footer", p.footerCRC.ok)
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 10) { chips }
+            VStack(spacing: 6) { chips }
         }
+    }
+    @ViewBuilder private var chips: some View {
+        chip("Header CRC", p.headerCRC.ok); chip("Body CRC", p.bodyCRC.ok); chip("Footer CRC", p.footerCRC.ok)
     }
     private func chip(_ t: String, _ ok: Bool) -> some View {
         HStack(spacing: 5) {
             Image(systemName: ok ? "checkmark.seal.fill" : "xmark.seal.fill")
-            Text(t).font(.caption.weight(.medium)).lineLimit(1).minimumScaleFactor(0.7)
+            Text(t).font(.caption.weight(.medium)).lineLimit(1).fixedSize()
         }
         .padding(.vertical, 8).frame(maxWidth: .infinity)
         .background(RoundedRectangle(cornerRadius: 12).fill((ok ? Color.green : .red).opacity(0.15)))
-        .foregroundStyle(ok ? .green : .red)
+        .foregroundStyle(ok ? Color.okText : Color.badText)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(t) CRC \(ok ? "matches" : "doesn't match")")
+        .accessibilityLabel("\(t) \(ok ? "matches" : "doesn't match")")
     }
 }
 
@@ -142,7 +164,7 @@ struct ChartCard: View {
                 GlucoseChart(points: points)
                 if points.contains(where: \.flagged) {
                     Label("Triangles: readings with quality flags (see Readings).", systemImage: "triangle.fill")
-                        .font(.caption).foregroundStyle(.orange)
+                        .font(.caption).foregroundStyle(Color.warnText)
                 }
             } else {
                 Text("No readings to chart yet.").font(.footnote).foregroundStyle(.secondary)
@@ -188,9 +210,13 @@ struct PatchInfoCard: View {
                 if let sec = patch.securityNibble { KV("Security ver", "\(sec) → \(patch.generationShort)") }
                 if let r = patch.regionCode { KV("Region", "\(patch.regionName) (\(Hex.byte(r)))") }
             }
-            KV("LT type", "\(patch.sensorType) (main)")
-            KV("", "\(patch.sensorTypePR67) (PR #67)")
+            Divider().padding(.vertical, 2)
+            Text("LibreTransmitter").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                .accessibilityAddTraits(.isHeader)
+            KV("Type today", patch.sensorType)
+            KV("With PR #67", patch.sensorTypePR67)
             KV("Gen1 crypto", e.cryptoSummary)
+            KV("Verdict", e.ltVerdict)
             Divider().padding(.vertical, 2)
             if !patch.isLibre3, let w = patch.cryptoWord { KV("Bytes 4–5", Hex.word(w)) }
             KV("Serial", e.serial)
@@ -199,7 +225,7 @@ struct PatchInfoCard: View {
 }
 
 struct ShareCard: View {
-    let e: Export; let share: ([Any]) -> Void
+    let e: Export
     @State private var copied: String?
     var body: some View {
         Card(title: "Share", icon: "square.and.arrow.up.on.square") {
@@ -208,7 +234,10 @@ struct ShareCard: View {
                     .frame(maxWidth: .infinity)
             }.buttonStyle(.borderedProminent)
             HStack(spacing: 10) {
-                Button { if let url = exportFile(e) { share([url]) } } label: {
+                Button {
+                    // the file holds everything: delete it when the share sheet closes
+                    if let url = exportFile(e) { presentShare([url]) { try? FileManager.default.removeItem(at: url) } }
+                } label: {
                     Label("JSON file", systemImage: "square.and.arrow.up").frame(maxWidth: .infinity)
                 }.buttonStyle(.bordered)
                 Button { copy(e.base64, "base64") } label: {
@@ -234,15 +263,15 @@ struct ShareCard: View {
 struct TrendCard: View {
     let trend: [Record]
     var minutesSinceStart = Int.max
-    @AppStorage("glucoseUnit") private var unit: GlucoseUnit = .regionDefault
+    @AppStorage(GlucoseUnit.storageKey) private var unit: GlucoseUnit = .regionDefault
     var body: some View {
         Card(title: "Trend · last 16 min, every minute", icon: "waveform.path.ecg") {
-            ScrollView(.horizontal, showsIndicators: false) {
+            ScrollView(.horizontal) {
                 Grid(alignment: .trailing, horizontalSpacing: 14, verticalSpacing: 4) {
                     GridRow {
-                        Text("min").gridColumnAlignment(.leading); Text("rawG"); Text("rawT"); Text("adj")
-                        Text("°C"); Text(unit.label); Text("")
-                    }.font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                        Text("min").gridColumnAlignment(.leading); Text(unit.label); Text("rawG"); Text("rawT")
+                        Text("adj"); Text("°C"); Text("")
+                    }.font(.caption2.weight(.semibold)).foregroundStyle(.secondary).accessibilityHidden(true)
                     let rows = trend.filter { $0.minuteOffset <= minutesSinceStart }
                     ForEach(rows.indices, id: \.self) { i in
                         let r = rows[i]
@@ -250,14 +279,14 @@ struct TrendCard: View {
                             Text(verbatim: "\(-r.minuteOffset)").gridColumnAlignment(.leading).foregroundStyle(.secondary)
                                 .accessibilityLabel(rowLabel(r, unit: unit))
                             Group {
+                                Text(r.glucose.map(unit.format) ?? "–").fontWeight(.semibold)
                                 Text(verbatim: "\(r.rawGlucose)"); Text(verbatim: "\(r.rawTemperature)"); Text(verbatim: "\(r.rawTemperatureAdjustment)")
                                 Text(tempText(r.temperature))
-                                Text(r.glucose.map(unit.format) ?? "–").fontWeight(.medium)
                                 FlagMark(bits: r.errorBits)
                             }.accessibilityHidden(true)
                         }
                     }
-                }.font(.system(.caption, design: .monospaced))
+                }.font(.system(.caption, design: .monospaced)).padding(.bottom, 6)
             }
             FlagLegend(records: trend)
         }
@@ -267,15 +296,15 @@ struct TrendCard: View {
 struct HistoryTableCard: View {
     let history: [Record]; let scannedAt: Date
     var minutesSinceStart = Int.max
-    @AppStorage("glucoseUnit") private var unit: GlucoseUnit = .regionDefault
+    @AppStorage(GlucoseUnit.storageKey) private var unit: GlucoseUnit = .regionDefault
     var body: some View {
         Card(title: "History · last 8 h, every 15 min", icon: "clock") {
-            ScrollView(.horizontal, showsIndicators: false) {
+            ScrollView(.horizontal) {
                 Grid(alignment: .trailing, horizontalSpacing: 14, verticalSpacing: 4) {
                     GridRow {
-                        Text("time").gridColumnAlignment(.leading); Text("min"); Text("rawG"); Text("°C")
-                        Text(unit.label); Text("")
-                    }.font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                        Text("time").gridColumnAlignment(.leading); Text(unit.label); Text("min"); Text("rawG")
+                        Text("°C"); Text("")
+                    }.font(.caption2.weight(.semibold)).foregroundStyle(.secondary).accessibilityHidden(true)
                     // records from before the sensor started are empty slots
                     let rows = history.filter { $0.minuteOffset <= minutesSinceStart }
                     ForEach(rows.indices, id: \.self) { i in
@@ -285,14 +314,14 @@ struct HistoryTableCard: View {
                                 .gridColumnAlignment(.leading).foregroundStyle(.secondary)
                                 .accessibilityLabel(rowLabel(r, unit: unit))
                             Group {
+                                Text(r.glucose.map(unit.format) ?? "–").fontWeight(.semibold)
                                 Text(verbatim: "\(-r.minuteOffset)").foregroundStyle(.secondary)
                                 Text(verbatim: "\(r.rawGlucose)"); Text(tempText(r.temperature))
-                                Text(r.glucose.map(unit.format) ?? "–").fontWeight(.medium)
                                 FlagMark(bits: r.errorBits)
                             }.accessibilityHidden(true)
                         }
                     }
-                }.font(.system(.caption, design: .monospaced))
+                }.font(.system(.caption, design: .monospaced)).padding(.bottom, 6)
             }
             FlagLegend(records: history)
         }
@@ -314,7 +343,7 @@ private struct FlagMark: View {
     let bits: Int
     var body: some View {
         if bits != 0 {
-            Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+            Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Color.warnText)
                 .accessibilityLabel("Quality flags: \(SensorLabels.measurementErrors(bits).joined(separator: ", "))")
         } else {
             Text("")
@@ -444,23 +473,33 @@ struct KV: View {
     @Environment(\.dynamicTypeSize) private var typeSize
     @ScaledMetric(relativeTo: .subheadline) private var labelWidth: CGFloat = 100
     init(_ k: String, _ v: String) { self.k = k; self.v = v }
+
+    /// Hex bytes and IDs line up in monospace; dates, words and durations read better in the body font.
+    private var mono: Bool { v.range(of: #"^[0-9A-Fa-fx:\s–.≠✓]+$"#, options: .regularExpression) != nil }
+
     var body: some View {
         Group {
-            if typeSize.isAccessibilitySize {
+            if typeSize >= .xxLarge {
                 VStack(alignment: .leading, spacing: 2) {
                     if !k.isEmpty { Text(k).foregroundStyle(.secondary) }
-                    Text(v).font(.system(.subheadline, design: .monospaced)).textSelection(.enabled)
+                    value
                 }.frame(maxWidth: .infinity, alignment: .leading)
             } else {
                 HStack(alignment: .top) {
                     Text(k).foregroundStyle(.secondary).frame(width: labelWidth, alignment: .leading)
-                    Text(v).font(.system(.subheadline, design: .monospaced)).textSelection(.enabled)
+                    value
                     Spacer(minLength: 0)
                 }
             }
         }
         .font(.subheadline)
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(k.isEmpty ? spoken(v) : "\(k), \(spoken(v))")
+    }
+
+    private var value: some View {
+        Text(v).font(mono ? .system(.subheadline, design: .monospaced) : .subheadline.monospacedDigit())
+            .textSelection(.enabled)
     }
 }
 
@@ -481,7 +520,7 @@ struct ErrorBanner: View { let text: String
         Label(text, systemImage: "exclamationmark.triangle.fill").font(.footnote)
             .frame(maxWidth: .infinity, alignment: .leading).padding()
             .background(RoundedRectangle(cornerRadius: 16).fill(Color.red.opacity(0.12)))
-            .foregroundStyle(.red)
+            .foregroundStyle(Color.badText)
     }
 }
 
@@ -517,10 +556,26 @@ func copySensitive(_ text: String) {
                                   options: [.localOnly: true, .expirationDate: Date().addingTimeInterval(300)])
 }
 
-struct ShareSheet: UIViewControllerRepresentable {
-    let items: [Any]
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: items, applicationActivities: nil)
+/// The system share sheet at its normal (half) height, with a callback when it closes.
+@MainActor func presentShare(_ items: [Any], onDone: @escaping () -> Void = {}) {
+    let vc = UIActivityViewController(activityItems: items, applicationActivities: nil)
+    vc.completionWithItemsHandler = { _, _, _, _ in onDone() }
+    guard let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene })
+            .first(where: { $0.activationState == .foregroundActive }),
+          var top = scene.keyWindow?.rootViewController else { onDone(); return }
+    while let presented = top.presentedViewController { top = presented }
+    vc.popoverPresentationController?.sourceView = top.view
+    top.present(vc, animated: true)
+}
+
+/// Covers the screen in the app switcher.
+struct PrivacyCover: View {
+    var body: some View {
+        ZStack {
+            Color(.systemGroupedBackground).ignoresSafeArea()
+            Label("Libre Export", systemImage: "sensor.tag.radiowaves.forward.fill")
+                .font(.title2.weight(.semibold)).foregroundStyle(.secondary)
+        }
+        .accessibilityHidden(true)
     }
-    func updateUIViewController(_ vc: UIActivityViewController, context: Context) {}
 }

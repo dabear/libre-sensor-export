@@ -29,8 +29,34 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(LIBRE_EXPORT_BUNDLE_ID)
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        MARKETING_VERSION: "1.2"
-        CURRENT_PROJECT_VERSION: "3"
+        MARKETING_VERSION: "1.3"
+        CURRENT_PROJECT_VERSION: "4"
         TARGETED_DEVICE_FAMILY: "1"
         SWIFT_VERSION: "5.0"
         CODE_SIGN_STYLE: Automatic
+  LibreSensorExportTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [Tests]
+    dependencies:
+      - target: LibreSensorExport
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: $(LIBRE_EXPORT_BUNDLE_ID).tests
+    configFiles:
+      Debug: Config/Config.xcconfig
+      Release: Config/Config.xcconfig
+schemes:
+  LibreSensorExport:
+    build:
+      targets:
+        LibreSensorExport: all
+        LibreSensorExportTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets: [LibreSensorExportTests]
+    archive:
+      config: Release

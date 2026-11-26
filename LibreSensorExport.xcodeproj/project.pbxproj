@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		021ABC86B011408C94358A9D /* SensorMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = 707DECC4316EE56DB859582A /* SensorMetadata.swift */; };
 		2609F46DB7342145B886A3AC /* DemoScan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72F3FE920BE118D8C2A64158 /* DemoScan.swift */; };
+		2A8DFEE5103DB2D6C6327EF6 /* LibreExportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AF2726E942D0D0741184EF0 /* LibreExportTests.swift */; };
 		459C4347197662DD1ABC9EE4 /* Libre2FRAM.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AC8E29365578380136B3A2D /* Libre2FRAM.swift */; };
 		5281804A2EC9A5D47D1C7F66 /* SensorExportApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C585FD214D3C3182DDC2683 /* SensorExportApp.swift */; };
 		5AE9807FCE4B8BCC037EB234 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6A2DA47470934728D4FAFF90 /* Assets.xcassets */; };
@@ -24,16 +25,28 @@
 		FB07A645A67A4A66331692BC /* Units.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1BE73BA8CE30FE5B1D51950 /* Units.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		72E9802D0A5BB942CE0FD741 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 6E96E7C6ACBFDF7DF9248076 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 95F61C41DB244C00EDE92F62;
+			remoteInfo = LibreSensorExport;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		16BEAE63C987F2503A12661F /* GlucoseChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlucoseChart.swift; sourceTree = "<group>"; };
 		1CD4B458AF2CD7BBE4E5B823 /* ScanStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanStore.swift; sourceTree = "<group>"; };
 		2AC174990E0A0E8C98EAE805 /* Cards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cards.swift; sourceTree = "<group>"; };
 		3D0F0D1AE86179C9083CFDD0 /* LibreSensorExport.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = LibreSensorExport.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4E8EEEA2FECA58578667EB3D /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
+		5A0F72897EC791624C298B60 /* LibreSensorExportTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = LibreSensorExportTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		6A2DA47470934728D4FAFF90 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		707DECC4316EE56DB859582A /* SensorMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorMetadata.swift; sourceTree = "<group>"; };
 		72F3FE920BE118D8C2A64158 /* DemoScan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoScan.swift; sourceTree = "<group>"; };
 		75A7B585CD6C540E5D03CEAB /* NFCReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NFCReader.swift; sourceTree = "<group>"; };
+		7AF2726E942D0D0741184EF0 /* LibreExportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibreExportTests.swift; sourceTree = "<group>"; };
 		8C585FD214D3C3182DDC2683 /* SensorExportApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorExportApp.swift; sourceTree = "<group>"; };
 		9AC8E29365578380136B3A2D /* Libre2FRAM.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Libre2FRAM.swift; sourceTree = "<group>"; };
 		A257889CE8315E4251EFCF0D /* TablesData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TablesData.swift; sourceTree = "<group>"; };
@@ -80,8 +93,17 @@
 			isa = PBXGroup;
 			children = (
 				3D0F0D1AE86179C9083CFDD0 /* LibreSensorExport.app */,
+				5A0F72897EC791624C298B60 /* LibreSensorExportTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		5C8DD0084C44FC2084BE6F5F /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				7AF2726E942D0D0741184EF0 /* LibreExportTests.swift */,
+			);
+			path = Tests;
 			sourceTree = "<group>";
 		};
 		9681D7ACC18B6D7546F36EF9 /* Resources */ = {
@@ -98,6 +120,7 @@
 				4A06D89C45A744A1E57AFA77 /* Config */,
 				9681D7ACC18B6D7546F36EF9 /* Resources */,
 				4E1F03CB9BDBB705C90FC270 /* Sources */,
+				5C8DD0084C44FC2084BE6F5F /* Tests */,
 				592254C9FEBD17A3EC275B51 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -105,6 +128,24 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		7FE61B841E00138DBA2B2980 /* LibreSensorExportTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2AF6E7EC56CFBF5A70FAEAC6 /* Build configuration list for PBXNativeTarget "LibreSensorExportTests" */;
+			buildPhases = (
+				EEF6BC144E4DD4DBB4526625 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BA01024E8FC7D93B8F353035 /* PBXTargetDependency */,
+			);
+			name = LibreSensorExportTests;
+			packageProductDependencies = (
+			);
+			productName = LibreSensorExportTests;
+			productReference = 5A0F72897EC791624C298B60 /* LibreSensorExportTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		95F61C41DB244C00EDE92F62 /* LibreSensorExport */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = DEE9EF1454E5881739AF92AA /* Build configuration list for PBXNativeTarget "LibreSensorExport" */;
@@ -132,6 +173,9 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
+					7FE61B841E00138DBA2B2980 = {
+						DevelopmentTeam = "";
+					};
 					95F61C41DB244C00EDE92F62 = {
 						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
@@ -153,6 +197,7 @@
 			projectRoot = "";
 			targets = (
 				95F61C41DB244C00EDE92F62 /* LibreSensorExport */,
+				7FE61B841E00138DBA2B2980 /* LibreSensorExportTests */,
 			);
 		};
 /* End PBXProject section */
@@ -190,7 +235,23 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		EEF6BC144E4DD4DBB4526625 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2A8DFEE5103DB2D6C6327EF6 /* LibreExportTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		BA01024E8FC7D93B8F353035 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 95F61C41DB244C00EDE92F62 /* LibreSensorExport */;
+			targetProxy = 72E9802D0A5BB942CE0FD741 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		17E252F813F107F7546CA70E /* Release */ = {
@@ -312,6 +373,24 @@
 			};
 			name = Debug;
 		};
+		7920E238EE15AB7AED96F32E /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = BE55673816A06EA13682D8F6 /* Config.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(LIBRE_EXPORT_BUNDLE_ID).tests";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LibreSensorExport.app/LibreSensorExport";
+			};
+			name = Release;
+		};
 		7F8B27464C83AB2B1C1277A6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = BE55673816A06EA13682D8F6 /* Config.xcconfig */;
@@ -320,13 +399,13 @@
 				CODE_SIGN_ENTITLEMENTS = Generated/LibreSensorExport.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				INFOPLIST_FILE = Generated/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2;
+				MARKETING_VERSION = 1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = "$(LIBRE_EXPORT_BUNDLE_ID)";
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.0;
@@ -342,13 +421,13 @@
 				CODE_SIGN_ENTITLEMENTS = Generated/LibreSensorExport.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				INFOPLIST_FILE = Generated/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2;
+				MARKETING_VERSION = 1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = "$(LIBRE_EXPORT_BUNDLE_ID)";
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.0;
@@ -356,9 +435,36 @@
 			};
 			name = Debug;
 		};
+		F58075E0CA5AEA056941A16F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = BE55673816A06EA13682D8F6 /* Config.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(LIBRE_EXPORT_BUNDLE_ID).tests";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LibreSensorExport.app/LibreSensorExport";
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		2AF6E7EC56CFBF5A70FAEAC6 /* Build configuration list for PBXNativeTarget "LibreSensorExportTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F58075E0CA5AEA056941A16F /* Debug */,
+				7920E238EE15AB7AED96F32E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		64BD849521E51906786A70E3 /* Build configuration list for PBXProject "LibreSensorExport" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

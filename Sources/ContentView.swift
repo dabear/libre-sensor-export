@@ -11,17 +11,15 @@ enum ScanTab: String, CaseIterable, Identifiable {
 struct ContentView: View {
     @StateObject private var nfc = NFCReader()
     @StateObject private var store = ScanStore()
-    @AppStorage("glucoseUnit") private var unit: GlucoseUnit = .regionDefault
+    @AppStorage(GlucoseUnit.storageKey) private var unit: GlucoseUnit = .regionDefault
     @AppStorage("deepScan") private var deepScan = false
     @State private var export: Export?
     /// The open scan came from saved scans (or was restored at launch), not from scanning now.
     @State private var saved = false
     @State private var tab: ScanTab = .overview
     @State private var showHistory = false
-    @State private var shareItems: ShareItems?
-
-    private struct ShareItems: Identifiable { let id = UUID(); let items: [Any] }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         NavigationStack {
@@ -63,16 +61,21 @@ struct ContentView: View {
                 export = makeExport(scan); saved = true; tab = .overview; nfc.errorText = nil; showHistory = false
             }
         }
-        .sheet(item: $shareItems) { ShareSheet(items: $0.items) }
+        // the app switcher's snapshot shows no glucose or identifiers (not while the NFC sheet is up)
+        .overlay { if scenePhase != .active && !nfc.scanning { PrivacyCover() } }
         .onChange(of: nfc.result?.scannedAt) { _, _ in
             // the scan on screen stays until a new one arrives (a cancelled rescan keeps it)
             guard let r = nfc.result else { return }
             export = makeExport(r); saved = false; tab = .overview
             store.add(r)
             UINotificationFeedbackGenerator().notificationOccurred(.success)
+            UIAccessibility.post(notification: .announcement, argument: "Scan complete. \(nfc.status)")
         }
         .onChange(of: nfc.errorText) { _, text in
-            if text != nil { UINotificationFeedbackGenerator().notificationOccurred(.error) }
+            if let text {
+                UINotificationFeedbackGenerator().notificationOccurred(.error)
+                UIAccessibility.post(notification: .announcement, argument: text)
+            }
         }
         .onChange(of: store.scans.count) { _, _ in
             // a deleted scan doesn't stay on screen
@@ -121,7 +124,7 @@ struct ContentView: View {
         if e.trustworthy, let p = e.parsed { ChartCard(p: p, scannedAt: e.result.scannedAt) }
         PatchInfoCard(e: e)
         if e.trustworthy, let p = e.parsed { StatusCard(p: p, scannedAt: e.result.scannedAt, saved: saved) }
-        ShareCard(e: e) { shareItems = ShareItems(items: $0) }
+        ShareCard(e: e)
             .id(e.result.scannedAt)   // "Copied" doesn't carry over to another scan
     }
 

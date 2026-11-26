@@ -1,7 +1,16 @@
-//  Libre2FRAM.swift — self-contained Libre 2 NFC FRAM decrypt + parse.
+//  Libre2FRAM.swift — Libre 2 NFC FRAM layout, decryption, CRC and bit reading (parsing is in SensorParse).
 //  Ported faithfully from LoopKit/LibreTransmitter (MIT): PreLibre2.swift,
 //  SensorData.swift, CRC.swift, Measurement.swift. No Abbott binary involved.
 import Foundation
+
+/// Where things are in the 344-byte FRAM (43 NFC blocks of 8 bytes).
+enum FRAMLayout {
+    static let blocks = 43
+    static let size = 344
+    static let header = 0..<24
+    static let body = 24..<320
+    static let footer = 320..<344
+}
 
 enum Libre2FRAM {
 
@@ -14,7 +23,7 @@ enum Libre2FRAM {
         if (product == 3 || product == 7) && security < 9 { return 1 }
         return 0
     }
-    /// .libre2 for a type-3 patch, else .libreUS14day fallback for decrypt arg selection.
+    /// Family 3 (Libre 2) uses the Libre 2 decryption argument; anything else the US 14 day one.
     static func isLibre2(_ patchInfo: [UInt8]) -> Bool {
         guard patchInfo.count >= 3 else { return false }
         return (patchInfo[2] >> 4) == 3
@@ -52,7 +61,7 @@ enum Libre2FRAM {
 
     /// Decrypt the 344-byte (43x8) Libre 2 FRAM read over NFC.
     static func decryptFRAM(id: [UInt8], info: [UInt8], data: [UInt8]) -> [UInt8]? {
-        guard data.count >= 344, id.count >= 6, info.count >= 6 else { return nil }
+        guard data.count >= FRAMLayout.size, id.count >= 6, info.count >= 6 else { return nil }
         let libre2 = isLibre2(info)
         func arg(_ block: Int) -> UInt16 {
             if libre2 { return u16(info[5], info[4]) ^ 0x44 }
@@ -60,8 +69,8 @@ enum Libre2FRAM {
             return u16(info[5], info[4])
         }
         var out = [UInt8]()
-        out.reserveCapacity(344)
-        for i in 0..<43 {
+        out.reserveCapacity(FRAMLayout.size)
+        for i in 0..<FRAMLayout.blocks {
             let bk = processCrypto(prepareVariables(id: id, x: UInt16(i), y: arg(i)))
             for (j, half) in [bk[0], bk[0] >> 8, bk[1], bk[1] >> 8, bk[2], bk[2] >> 8, bk[3], bk[3] >> 8].enumerated() {
                 out.append(data[i * 8 + j] ^ UInt8(truncatingIfNeeded: half))

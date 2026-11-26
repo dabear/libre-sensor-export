@@ -20,7 +20,6 @@ struct CRCCheck {
 
 struct ParsedSensor {
     let serial: String
-    let generation: Int         // 1 or 2
     let state: Int              // header byte 4 (SensorLabels.state)
     let minutesSinceStart: Int
     let maxMinutesWear: Int
@@ -83,8 +82,8 @@ enum SensorParse {
 
     /// Parse a decrypted 344-byte FRAM. `uid` and `patchInfo` are as read over NFC.
     static func parse(uid: [UInt8], patchInfo: [UInt8], fram: [UInt8]) -> ParsedSensor? {
-        guard fram.count >= 344 else { return nil }
-        let body = Array(fram[24..<320]), footer = Array(fram[320..<344])
+        guard fram.count >= FRAMLayout.size else { return nil }
+        let body = Array(fram[FRAMLayout.body]), footer = Array(fram[FRAMLayout.footer])
 
         // calibration (bit offsets from SensorData.calibrationData)
         let i1 = Libre2FRAM.readBits(fram, 2, 0, 3)
@@ -139,14 +138,13 @@ enum SensorParse {
 
         return ParsedSensor(
             serial: serialNumber(uid: uid, patchInfo: patchInfo),
-            generation: Libre2FRAM.securityGeneration(patchInfo),
             state: Int(fram[4]),
             minutesSinceStart: minutes, maxMinutesWear: maxWear,
             nextTrendBlock: nextTrend, nextHistoryBlock: nextHistory,
             regionByte: Int(fram[323]),
-            headerCRC: Libre2FRAM.crcCheck(fram[0..<24]),
-            bodyCRC: Libre2FRAM.crcCheck(fram[24..<320]),
-            footerCRC: Libre2FRAM.crcCheck(fram[320..<344]),
+            headerCRC: Libre2FRAM.crcCheck(fram[FRAMLayout.header]),
+            bodyCRC: Libre2FRAM.crcCheck(fram[FRAMLayout.body]),
+            footerCRC: Libre2FRAM.crcCheck(fram[FRAMLayout.footer]),
             i1: i1, i2: i2, i3: cal3, i4: i4, i5: i5, i6: i6, trend: trend, history: history)
     }
 

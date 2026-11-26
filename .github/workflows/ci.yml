@@ -1,0 +1,23 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the install script
+        run: bash -n scripts/install.sh
+      - name: Build for a device (unsigned)
+        run: >
+          xcodebuild -project LibreSensorExport.xcodeproj -scheme LibreSensorExport
+          -configuration Release -destination 'generic/platform=iOS'
+          CODE_SIGNING_ALLOWED=NO build
+      - name: Unit tests (Simulator)
+        run: >
+          xcodebuild -project LibreSensorExport.xcodeproj -scheme LibreSensorExport
+          -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest'
+          CODE_SIGNING_ALLOWED=NO test

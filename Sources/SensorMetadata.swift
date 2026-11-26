@@ -123,14 +123,6 @@ struct PatchInfoDecoded {
         default: return "other gen"
         }
     }
-
-    var generationLabel: String {
-        switch generation {
-        case 2: return "Gen2 (authenticated NFC)"
-        case 1: return "Gen1 (Libre 2 / US 14 day)"
-        default: return "Other"
-        }
-    }
 }
 
 enum SensorLabels {

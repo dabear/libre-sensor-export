@@ -4,5 +4,5 @@ DerivedData/
 *.xcuserstate
 xcuserdata/
 .DS_Store
-## xcodegen can regenerate the project from project.yml, but we commit it for convenience
 Config/Local.xcconfig
+## the project is generated from project.yml by xcodegen and committed for convenience

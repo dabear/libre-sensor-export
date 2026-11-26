@@ -7,7 +7,7 @@ struct HistoryView: View {
     /// The scan open on the main screen, marked in the list.
     let openID: Date?
     let open: (ScanResult) -> Void
-    @AppStorage("glucoseUnit") private var unit: GlucoseUnit = .regionDefault
+    @AppStorage(GlucoseUnit.storageKey) private var unit: GlucoseUnit = .regionDefault
     @Environment(\.dismiss) private var dismiss
     @State private var confirmDeleteAll = false
     /// Decrypted and parsed once per scan, not on every redraw.
@@ -26,7 +26,7 @@ struct HistoryView: View {
             let e = newest.first.flatMap { exports[$0.scannedAt] }
             let serial = e?.serial ?? "–"
             let name = serial == "–" ? "UID \(Hex.string(newest.first?.uid.reversed() ?? [], separator: ":"))" : serial
-            return Section_(id: uid, title: "\(name) · \(e?.patch.summary ?? "")", scans: newest)
+            return Section_(id: uid, title: "\(name) · \(e?.summary ?? "")", scans: newest)
         }
         .sorted { ($0.scans.first?.scannedAt ?? .distantPast) > ($1.scans.first?.scannedAt ?? .distantPast) }
     }
@@ -41,7 +41,10 @@ struct HistoryView: View {
                                 .foregroundStyle(.primary)
                                 .contextMenu {
                                     if let e = exports[scan.scannedAt] {
-                                        Button { UIPasteboard.general.string = makeReport(e) } label: {
+                                        Button {
+                                            UIPasteboard.general.string = makeReport(e)
+                                            UINotificationFeedbackGenerator().notificationOccurred(.success)
+                                        } label: {
                                             Label("Copy report", systemImage: "doc.text")
                                         }
                                     }
