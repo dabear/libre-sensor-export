@@ -120,7 +120,7 @@ final class NFCReader: ObservableObject {
             let count = min(3, blocks - first)
             do {
                 let pages = try await attempt(3) {
-                    let pages = try await tag.readMultipleBlocks(requestFlags: .highDataRate,
+                    let pages = try await tag.readMultipleBlocks(requestFlags: addressed,
                                                                  blockRange: NSRange(location: first, length: count))
                     guard pages.count == count, pages.allSatisfy({ $0.count == 8 }) else { throw Incomplete() }
                     return pages
@@ -155,7 +155,7 @@ final class NFCReader: ObservableObject {
                            icSerialNumber: [UInt8](tag.icSerialNumber))
         session.alertMessage = "Reading chip info…"
         do {
-            let s = try await tag.systemInfo(requestFlags: .highDataRate)
+            let s = try await tag.systemInfo(requestFlags: addressed)
             info.systemInfo = TagSystemInfo(dsfid: s.dataStorageFormatIdentifier,
                                             afi: s.applicationFamilyIdentifier,
                                             blockSize: s.blockSize, totalBlocks: s.totalBlocks,
@@ -165,7 +165,11 @@ final class NFCReader: ObservableObject {
         }
         let total = info.systemInfo.map(\.totalBlocks).flatMap { $0 > 0 ? $0 : nil }
 
-        // Block security status of the FRAM blocks only, in small requests (a Libre 2 dropped the
+        // Lock status and the memory after the FRAM only with "Read all memory": diagnostics that
+        // aren't needed for the reading, and a Libre 2 has dropped the connection on lock status.
+        guard deep else { return info }
+
+        // Block security status of the FRAM blocks, in small requests (a Libre 2 dropped the
         // connection when asked for 64 blocks at once), each tried twice.
         var statuses: [Int] = []
         var dropped = false
@@ -181,17 +185,15 @@ final class NFCReader: ObservableObject {
         }
         info.blockSecurity = statuses.isEmpty ? nil : statuses
 
-        if deep {
-            // Libre 1 memory is 244 blocks; use the tag's own count when it gave one.
-            let (bytes, firstNote) = await extraMemory(tag, session: session, end: min(total ?? 244, 256))
-            var note = firstNote
-            if dropped, bytes.isEmpty {
-                // after a dropped connection a "refused" block may just be no connection
-                note += " (the connection had dropped earlier in this scan, so this may not be a refusal)"
-            }
-            info.extraMemory = bytes
-            info.extraMemoryNote = note
+        // Libre 1 memory is 244 blocks; use the tag's own count when it gave one.
+        let (bytes, firstNote) = await extraMemory(tag, session: session, end: min(total ?? 244, 256))
+        var note = firstNote
+        if dropped, bytes.isEmpty {
+            // after a dropped connection a "refused" block may just be no connection
+            note += " (the connection had dropped earlier in this scan, so this may not be a refusal)"
         }
+        info.extraMemory = bytes
+        info.extraMemoryNote = note
         return info
     }
 
@@ -201,12 +203,23 @@ final class NFCReader: ObservableObject {
         return stride(from: 0, to: count, by: size).map { NSRange(location: $0, length: min(size, count - $0)) }
     }
 
+    /// Addressed mode (the command carries the chip's UID), as LibreTransmitter reads.
+    private nonisolated static let addressed: NFCISO15693RequestFlag = [.highDataRate, .address]
+
+    /// Lock status of `range`. Gives up after 5 s: if CoreNFC never calls back (e.g. once the
+    /// session has died) the scan must not hang until the 60 s NFC timeout.
     private nonisolated static func securityStatus(_ tag: NFCISO15693Tag, _ range: NSRange) async throws -> [Int] {
         try await withCheckedThrowingContinuation { (c: CheckedContinuation<[Int], Error>) in
-            tag.getMultipleBlockSecurityStatus(requestFlags: .highDataRate, blockRange: range) { status, error in
-                if let error { c.resume(throwing: error) } else { c.resume(returning: status.map(\.intValue)) }
+            let once = ResumeOnce(c)
+            tag.getMultipleBlockSecurityStatus(requestFlags: addressed, blockRange: range) { status, error in
+                if let error { once.resume(.failure(error)) } else { once.resume(.success(status.map(\.intValue))) }
             }
+            DispatchQueue.global().asyncAfter(deadline: .now() + 5) { once.resume(.failure(TimedOut())) }
         }
+    }
+
+    private struct TimedOut: LocalizedError {
+        var errorDescription: String? { "no answer within 5 seconds" }
     }
 
     /// Blocks 43..<end, 8 per request; where a request fails, one block at a time to find the
@@ -220,7 +233,7 @@ final class NFCReader: ObservableObject {
         while first < end {
             session.alertMessage = "Reading all memory… \((first - start) * 100 / (end - start))%"
             let n = min(8, end - first)
-            if let pages = try? await tag.readMultipleBlocks(requestFlags: .highDataRate,
+            if let pages = try? await tag.readMultipleBlocks(requestFlags: addressed,
                                                              blockRange: NSRange(location: first, length: n)),
                pages.count == n {
                 for page in pages { bytes += [UInt8](page) }
@@ -229,7 +242,7 @@ final class NFCReader: ObservableObject {
             }
             do {
                 let page = try await attempt(2) {
-                    try await tag.readMultipleBlocks(requestFlags: .highDataRate,
+                    try await tag.readMultipleBlocks(requestFlags: addressed,
                                                      blockRange: NSRange(location: first, length: 1))
                 }
                 guard let p = page.first else { throw Incomplete() }
@@ -307,6 +320,17 @@ final class NFCReader: ObservableObject {
         default:
             return e.localizedDescription
         }
+    }
+}
+
+/// Resumes a continuation once, whichever of the answer and the timeout comes first.
+private final class ResumeOnce<T: Sendable>: @unchecked Sendable {
+    private var continuation: CheckedContinuation<T, Error>?
+    private let lock = NSLock()
+    init(_ c: CheckedContinuation<T, Error>) { continuation = c }
+    func resume(_ result: Result<T, Error>) {
+        lock.lock(); let c = continuation; continuation = nil; lock.unlock()
+        c?.resume(with: result)
     }
 }
 

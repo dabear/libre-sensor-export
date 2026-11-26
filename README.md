@@ -27,7 +27,8 @@ Not a medical device; for your own data research only.
   for sensors whose memory was read).
 - **Technical:** encryption, calibration (i1–i6), CRC values, ring-buffer indices,
   the region byte in memory; the NFC chip (UID, maker, IC serial, memory size, IC
-  reference, which blocks are locked); and the raw bytes, 8 bytes per row.
+  reference, and with *Read all memory* which blocks are locked); and the raw bytes,
+  8 bytes per row.
 - **Saved scans** (clock button): every scan is kept on the iPhone, grouped by
   sensor, so you can look at one again or compare it over time. A saved scan is
   marked *Saved scan · date*; the newest one opens when the app starts. Swipe to
@@ -37,8 +38,10 @@ Not a medical device; for your own data research only.
   failing CRC is red and the raw values stay available under Readings and Technical.
   If only the body CRC fails, the sensor most likely updated during the read: scan again.
 - **Settings** (gear button): mg/dL or mmol/L (defaults to your region), and
-  *Read all memory*, which also reads the blocks after the 344-byte FRAM (slower;
-  shows where the sensor stops answering).
+  *Read all memory and lock status*, which also reads which blocks are locked and the
+  blocks after the 344-byte FRAM (slower; shows where the sensor stops answering).
+  Off by default: a normal scan sends only what the reading needs, which is more
+  reliable on some sensors.
 - **Share:** *Copy report* gives a short text without the UID, serial, readings or
   patch info from byte 4, safe to paste into an issue or PR. *JSON file* and
   *Base64* contain everything.

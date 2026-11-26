@@ -104,7 +104,7 @@ struct ContentView: View {
                 ForEach(GlucoseUnit.allCases) { Text($0.label).tag($0) }
             }
             Toggle(isOn: $deepScan) {
-                Label("Read all memory (slower)", systemImage: "memorychip")
+                Label("Read all memory and lock status (slower)", systemImage: "memorychip")
             }
         } label: {
             Label("Settings", systemImage: "gearshape")

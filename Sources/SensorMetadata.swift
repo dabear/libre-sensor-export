@@ -18,7 +18,7 @@ struct TagInfo: Codable {
     let icSerialNumber: [UInt8]
     var systemInfo: TagSystemInfo?
     var systemInfoError: String?
-    /// ISO 15693 block security status from block 0 (bit 0 set = block locked).
+    /// ISO 15693 block security status from block 0 (bit 0 set = block locked); only with "Read all memory".
     var blockSecurity: [Int]?
     var blockSecurityError: String?
     /// Blocks after the 43 FRAM blocks, from block 43 on (only with "Read all memory").
