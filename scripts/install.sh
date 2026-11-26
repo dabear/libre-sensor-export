@@ -19,7 +19,7 @@ say()  { printf '\033[1m==> %s\033[0m\n' "$*"; }
 fail() { printf '\033[31mError:\033[0m %s\n' "$*" >&2; exit 1; }
 
 command -v xcodebuild >/dev/null || fail "Xcode is not installed. Get it from the Mac App Store."
-xcrun --find devicectl >/dev/null 2>&1 || fail "Xcode 15 or newer is needed (devicectl not found)."
+xcrun --find devicectl >/dev/null 2>&1 || fail "Xcode 16 or newer is needed (devicectl not found)."
 
 # --- Team ID: argument, $TEAM, Config/Local.xcconfig, or your Apple Development certificate
 TEAM="${1:-${TEAM:-}}"
@@ -78,10 +78,10 @@ LOG=build/xcodebuild.log
 mkdir -p build
 if ! xcodebuild -project "$PROJECT" -scheme "$SCHEME" -configuration Release \
         -destination "id=$DEVICE" -derivedDataPath "$DERIVED" \
-        -allowProvisioningUpdates DEVELOPMENT_TEAM="$TEAM" build >"$LOG" 2>&1; then
+        -allowProvisioningUpdates -allowProvisioningDeviceRegistration DEVELOPMENT_TEAM="$TEAM" build >"$LOG" 2>&1; then
     grep -E "error:|requires a provisioning|No Accounts|signing" "$LOG" | sort -u | head -15 >&2 || true
-    fail "Build failed. Full log: $LOG
-       Most common fix: Xcode > Settings > Accounts, sign in with the Apple ID of team $TEAM."
+    fail "Build failed. Full log: $LOG (it holds your team ID, name and the iPhone's ID: don't post it publicly)
+       Most common fixes: unlock the iPhone and run again, or Xcode > Settings > Accounts, sign in with the Apple ID of team $TEAM."
 fi
 APP="$DERIVED/Build/Products/Release-iphoneos/LibreSensorExport.app"
 BUNDLE_ID=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$APP/Info.plist")
@@ -91,12 +91,13 @@ say "Installing $BUNDLE_ID..."
 xcrun devicectl device install app --device "$DEVICE" "$APP" >/dev/null 2>&1 \
     || xcrun devicectl device install app --device "$DEVICE" "$APP" >/dev/null \
     || fail "Install failed. Unlock the iPhone and run the script again."
+rm -f "$LOG"   # holds signing identities and device IDs
 
 say "Launching..."
 if ! xcrun devicectl device process launch --device "$DEVICE" "$BUNDLE_ID" >/dev/null 2>&1; then
-    echo "Installed, but iOS didn't let it start yet. The first time, on the iPhone:"
-    echo "  Settings > General > VPN & Device Management > your Apple ID > Trust"
-    echo "then open Libre Export from the home screen."
+    echo "Installed, but it didn't start. Unlock the iPhone and open Libre Export from the home screen."
+    echo "If iOS says the developer isn't trusted: Settings > General > VPN & Device Management >"
+    echo "your Apple ID > Trust."
     exit 0
 fi
 say "Done: Libre Export is open on the iPhone."

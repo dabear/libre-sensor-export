@@ -5,8 +5,22 @@ import Foundation
 final class ScanStore: ObservableObject {
     @Published private(set) var scans: [ScanResult] = []   // newest first
 
-    private let url: URL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        .appendingPathComponent("scans.json")
+    /// Its own folder, excluded from iCloud and computer backups: the health data stays on this iPhone.
+    private static let folder: URL = {
+        let fm = FileManager.default
+        let base = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        var dir = base.appendingPathComponent("Scans", isDirectory: true)
+        try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        try? dir.setResourceValues(values)
+        // 1.1 kept the file directly in Application Support, which is backed up: move it in
+        let old = base.appendingPathComponent("scans.json"), new = dir.appendingPathComponent("scans.json")
+        if fm.fileExists(atPath: old.path), !fm.fileExists(atPath: new.path) { try? fm.moveItem(at: old, to: new) }
+        return dir
+    }()
+
+    private let url = ScanStore.folder.appendingPathComponent("scans.json")
 
     init() {
         guard let data = try? Data(contentsOf: url) else { return }
@@ -34,6 +48,11 @@ final class ScanStore: ObservableObject {
     func deleteAll() {
         scans = []
         save()
+        // also set-aside unreadable files and leftover share files
+        let fm = FileManager.default
+        for f in (try? fm.contentsOfDirectory(at: ScanStore.folder, includingPropertiesForKeys: nil)) ?? []
+        where f.lastPathComponent != "scans.json" { try? fm.removeItem(at: f) }
+        removeExportFiles()
     }
 
     private func save() {

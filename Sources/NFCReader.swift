@@ -44,6 +44,8 @@ final class NFCReader: NSObject, ObservableObject, NFCTagReaderSessionDelegate {
     func tagReaderSession(_ session: NFCTagReaderSession, didInvalidateWithError error: Error) {
         let message = pendingError ?? Self.describe(error)
         DispatchQueue.main.async {
+            // a late callback from an earlier session must not end the scan running now
+            guard session === self.session else { return }
             self.scanning = false
             if self.result == nil { self.errorText = message }
         }
@@ -209,6 +211,7 @@ final class NFCReader: NSObject, ObservableObject, NFCTagReaderSessionDelegate {
         DispatchQueue.main.async {
             self.result = result
             self.status = status
+            self.errorText = nil
             self.scanning = false
         }
         session.alertMessage = alert

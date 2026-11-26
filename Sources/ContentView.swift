@@ -21,6 +21,7 @@ struct ContentView: View {
     @State private var shareItems: ShareItems?
 
     private struct ShareItems: Identifiable { let id = UUID(); let items: [Any] }
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         NavigationStack {
@@ -41,7 +42,7 @@ struct ContentView: View {
                     }
                 }
                 .padding(.horizontal, 16).padding(.vertical, 12)
-                .animation(.default, value: tab)
+                .animation(reduceMotion ? nil : .default, value: tab)
             }
             .background(Color(.systemGroupedBackground).ignoresSafeArea())
             .navigationTitle("Libre Export")
@@ -73,12 +74,19 @@ struct ContentView: View {
         .onChange(of: nfc.errorText) { _, text in
             if text != nil { UINotificationFeedbackGenerator().notificationOccurred(.error) }
         }
+        .onChange(of: store.scans.count) { _, _ in
+            // a deleted scan doesn't stay on screen
+            if let id = export?.result.scannedAt, !store.scans.contains(where: { $0.scannedAt == id }) {
+                export = nil; saved = false
+            }
+        }
         #if DEBUG
         .onAppear {
             if DemoScan.isOn, nfc.result == nil { export = makeExport(DemoScan.result()); saved = DemoScan.saved; tab = DemoScan.tab ?? .overview }
         }
         #endif
         .task {
+            removeExportFiles()   // share files left from an earlier run
             // after a restart, show the newest saved scan (marked as saved) instead of an empty screen
             #if DEBUG
             if DemoScan.isOn { return }
@@ -114,6 +122,7 @@ struct ContentView: View {
         PatchInfoCard(e: e)
         if e.trustworthy, let p = e.parsed { StatusCard(p: p, scannedAt: e.result.scannedAt, saved: saved) }
         ShareCard(e: e) { shareItems = ShareItems(items: $0) }
+            .id(e.result.scannedAt)   // "Copied" doesn't carry over to another scan
     }
 
     @ViewBuilder private func readings(_ e: Export) -> some View {

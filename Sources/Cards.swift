@@ -42,6 +42,8 @@ struct HeroCard: View {
                     .font(.title2.weight(.semibold))
                 Text(status).font(.footnote).foregroundStyle(.secondary)
                     .multilineTextAlignment(.center).padding(.horizontal)
+                Text("Not a medical device: glucose is computed by this app and can differ from the Libre app.")
+                    .font(.caption2).foregroundStyle(.secondary).multilineTextAlignment(.center).padding(.horizontal)
             }
         }
         .frame(maxWidth: .infinity).padding(.vertical, 24).padding(.horizontal, 12)
@@ -54,18 +56,20 @@ struct HeroCard: View {
         let ended = p.state >= 4
         if let g = newest?.glucose {
             let arrow = trendArrow(p.trendRate)
-            let color = ended ? Color.secondary : glucoseColor(g)
+            // grey, no arrow: not a live reading (ended, saved scan, or still warming up)
+            let dim = ended || saved || p.warmupMinutesLeft != nil
+            let color = dim ? Color.secondary : glucoseColor(g)
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(unit.format(g)).font(.system(size: valueSize, weight: .bold, design: .rounded))
                     .foregroundStyle(color).lineLimit(1).minimumScaleFactor(0.5)
                 Text(unit.label).font(.title3.weight(.medium)).foregroundStyle(.secondary)
-                if !ended { Image(systemName: arrow.symbol).font(.title).foregroundStyle(color) }
+                if !dim { Image(systemName: arrow.symbol).font(.title).foregroundStyle(color) }
                 if let bits = newest?.errorBits, bits != 0 {
                     Image(systemName: "exclamationmark.triangle.fill").font(.title3).foregroundStyle(.orange)
                 }
             }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("\(unit.format(g)) \(unit.spoken), \(ended ? "last stored reading" : arrow.words)\(newest?.errorBits ?? 0 != 0 ? ", with quality flags" : "")")
+            .accessibilityLabel("\(unit.format(g)) \(unit.spoken), \(ended ? "last stored reading" : saved ? "saved scan" : p.warmupMinutesLeft != nil ? "warming up" : arrow.words)\(newest?.errorBits ?? 0 != 0 ? ", with quality flags" : "")")
             if ended {
                 Text("Sensor \(SensorLabels.state(p.state).lowercased()): last stored reading")
                     .font(.footnote.weight(.medium)).foregroundStyle(.secondary)
@@ -85,6 +89,9 @@ struct HeroCard: View {
         if let w = p.warmupMinutesLeft {
             Label("Warming up: ready in \(w) min\(saved ? " (at scan time)" : "")", systemImage: "hourglass")
                 .font(.subheadline.weight(.medium)).foregroundStyle(.orange)
+        } else if p.state == 1 {
+            Label("Not started: activate it with the Libre app or reader", systemImage: "play.circle")
+                .font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
         } else if let x = p.expiredMinutesAgo {
             Label("Expired \(ParsedSensor.human(x)) before the scan", systemImage: "clock.badge.xmark")
                 .font(.subheadline.weight(.medium)).foregroundStyle(.red)
@@ -150,13 +157,19 @@ struct StatusCard: View {
     var body: some View {
         Card(title: saved ? "Sensor, at scan time" : "Sensor", icon: "sensor.tag.radiowaves.forward") {
             KV("State", "\(SensorLabels.state(p.state)) (\(Hex.byte(p.state)))")
-            if let w = p.warmupMinutesLeft { KV("Warm-up", "ready in \(w) min") }
-            KV("Age", "\(p.ageHuman)  ·  \(p.minutesSinceStart) min")
-            KV("Wear time", "\(ParsedSensor.human(p.maxMinutesWear))  ·  \(p.maxMinutesWear) min")
-            if let x = p.expiredMinutesAgo { KV("Expired", "\(ParsedSensor.human(x)) ago") }
-            else { KV("Left", "\(p.leftHuman)  ·  \(p.minutesLeft) min") }
-            KV("Started", dateTime(scannedAt.addingTimeInterval(-60 * Double(p.minutesSinceStart))))
-            KV("Ends", dateTime(scannedAt.addingTimeInterval(60 * Double(p.maxMinutesWear - p.minutesSinceStart))))
+            if p.state == 1 {
+                KV("", "Not started: activate it with the Libre app or reader")
+                KV("Wear time", "\(ParsedSensor.human(p.maxMinutesWear))  ·  \(p.maxMinutesWear) min")
+            } else {
+                if let w = p.warmupMinutesLeft { KV("Warm-up", "ready in \(w) min") }
+                KV("Age", "\(p.ageHuman)  ·  \(p.minutesSinceStart) min")
+                KV("Wear time", "\(ParsedSensor.human(p.maxMinutesWear))  ·  \(p.maxMinutesWear) min")
+                if p.state >= 4 { KV("Ended", "\(SensorLabels.state(p.state)) at age \(p.ageHuman)") }
+                else if let x = p.expiredMinutesAgo { KV("Expired", "\(ParsedSensor.human(x)) ago") }
+                else { KV("Left", "\(p.leftHuman)  ·  \(p.minutesLeft) min") }
+                KV("Started", dateTime(scannedAt.addingTimeInterval(-60 * Double(p.minutesSinceStart))))
+                if p.state < 4 { KV("Ends", dateTime(scannedAt.addingTimeInterval(60 * Double(p.maxMinutesWear - p.minutesSinceStart)))) }
+            }
             KV("Scanned", dateTime(scannedAt))
         }
     }
@@ -203,13 +216,14 @@ struct ShareCard: View {
                         .frame(maxWidth: .infinity)
                 }.buttonStyle(.bordered)
             }
-            Text("The report leaves out the UID, serial, readings and patch info from byte 4, so it's safe to post. The JSON file and base64 contain everything, including the sensor's identity and your glucose data.")
+            Text("The report leaves out the UID, serial, readings and patch info from byte 4, so it's safe to post. The JSON file and base64 contain everything, including the sensor's identity and your glucose data; base64 stays on this iPhone's clipboard only, for 5 minutes.")
                 .font(.caption).foregroundStyle(.secondary)
         }
         .controlSize(.large)
     }
     private func copy(_ text: String, _ what: String) {
-        UIPasteboard.general.string = text
+        // the report is meant to be posted; base64 holds health data and identifiers
+        if what == "base64" { copySensitive(text) } else { UIPasteboard.general.string = text }
         copied = what
         UINotificationFeedbackGenerator().notificationOccurred(.success)
     }
@@ -405,7 +419,7 @@ struct RawCard: View {
                 Text(title).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                 Spacer()
                 Button {
-                    UIPasteboard.general.string = Hex.string(b)
+                    copySensitive(Hex.string(b))
                     copied = title
                     UINotificationFeedbackGenerator().notificationOccurred(.success)
                 } label: {
@@ -495,6 +509,12 @@ struct ScanButton: View {
         .padding(.horizontal, 16).padding(.bottom, 8)
         .background(.ultraThinMaterial)
     }
+}
+
+/// Health data and identifiers: this iPhone's clipboard only (no Universal Clipboard), cleared after 5 minutes.
+func copySensitive(_ text: String) {
+    UIPasteboard.general.setItems([["public.utf8-plain-text": text]],
+                                  options: [.localOnly: true, .expirationDate: Date().addingTimeInterval(300)])
 }
 
 struct ShareSheet: UIViewControllerRepresentable {

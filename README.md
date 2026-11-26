@@ -35,6 +35,7 @@ Not a medical device; for your own data research only.
 - **If the memory fails its CRCs** (for example a batch with a different
   encryption), no glucose, chart or dates are shown, since they'd be garbage; the
   failing CRC is red and the raw values stay available under Readings and Technical.
+  If only the body CRC fails, the sensor most likely updated during the read: scan again.
 - **Settings** (gear button): mg/dL or mmol/L (defaults to your region), and
   *Read all memory*, which also reads the blocks after the 344-byte FRAM (slower;
   shows where the sensor stops answering).
@@ -54,7 +55,7 @@ You build the app yourself on a Mac and install it on your own phone; it isn't
 on the App Store.
 
 ### What you need
-- A **Mac** with **Xcode 15 or newer** (free, from the Mac App Store). Open Xcode
+- A **Mac** with **Xcode 16 or newer** (free, from the Mac App Store). Open Xcode
   once after installing so it can finish setting up.
 - A **paid Apple Developer Program** membership (USD 99/year). A free Apple ID
   can't sign apps that read NFC tags.
@@ -88,7 +89,7 @@ Settings → General → VPN & Device Management → your Apple ID → **Trust**
 **Libre Export** from the home screen.
 
 The app keeps working for a year (the life of the development profile). Run
-`./scripts/install.sh` again to renew it or to install a newer version; your phone
+`git pull && ./scripts/install.sh` again to renew it or to install a newer version; your phone
 keeps the app, only the code is replaced.
 
 ### If something goes wrong
@@ -99,8 +100,8 @@ keeps the app, only the code is replaced.
 | *No iPhone found* | Unlock the phone, reconnect the cable, tap Trust. |
 | *Several iPhones connected* | `DEVICE=<udid> ./scripts/install.sh` with a UDID from the list it prints. |
 | *Developer Mode is off* | See step 3 of the one-time setup. |
-| *Build failed* … *No Accounts* / *provisioning* | You aren't signed in to Xcode with the paid team's Apple ID (step 1). The full log is in `build/xcodebuild.log`. |
-| Installed, but it won't open | Trust the developer (see *First launch only* above). |
+| *Build failed* … *No Accounts* / *provisioning* | You aren't signed in to Xcode with the paid team's Apple ID (step 1). The full log is in `build/xcodebuild.log`; it holds your team ID, name and the iPhone's ID, so don't post it publicly. |
+| Installed, but it won't open | Unlock the iPhone and open it from the home screen; if iOS says the developer isn't trusted, see *First launch only* above. |
 
 ### Install from Xcode instead
 1. Copy `Config/Local.xcconfig.example` to `Config/Local.xcconfig` and put your
@@ -121,6 +122,14 @@ still and scan again. The scan is saved automatically.
 The JSON file and base64 contain your sensor's identity (UID, serial) and your
 glucose data. Only share them with people you'd share that with; for public
 issues and PRs use **Copy report**.
+
+### Privacy
+- The app has no network access; nothing leaves the iPhone unless you share it.
+- Every scan is saved on the iPhone, excluded from iCloud and computer backups,
+  until you delete it in **Saved scans**; *Delete all* also removes leftover
+  export files.
+- *Base64* and raw bytes go to this iPhone's clipboard only (not to your other
+  devices) and are cleared after 5 minutes. *Copy report* is a normal copy.
 
 ## Checking a new sensor batch
 Made for confirming [LibreTransmitter#67](https://github.com/LoopKit/LibreTransmitter/pull/67)
@@ -164,6 +173,9 @@ MeasurementError bits; 0 = none), and in `tag`: `block_security` (one status per
 block from 0, bit 0 = locked), `block_security_error`, `extra_memory_hex`,
 `extra_memory_from_block` and `extra_memory_note` (with *Read all memory*).
 
+Version 1.2 adds `crc_ok` (all three CRCs match) and leaves out `started_at` and
+`ends_at` for a sensor that hasn't started.
+
 ## Notes
 - **Demo mode:** the Simulator has no NFC. A Debug build launched with the
   argument `-demo` (Xcode: Product → Scheme → Edit Scheme → Run → Arguments)
@@ -173,4 +185,5 @@ block from 0, bit 0 = locked), `block_security_error`, `extra_memory_hex`,
   memory that fails its CRCs looks. Demo scans aren't saved.
 - **Changing the project:** `project.yml` is the source of the Xcode project;
   after editing it run `brew install xcodegen && xcodegen`.
-- Clean-room: FRAM decrypt/parse ported from MIT LibreTransmitter; no Abbott binary.
+- FRAM decryption and parsing are ported from LoopKit/LibreTransmitter (MIT, see
+  LICENSE); no Abbott software is included.

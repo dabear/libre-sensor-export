@@ -7,8 +7,8 @@ import Foundation
 enum DemoScan {
     static var isOn: Bool { ProcessInfo.processInfo.arguments.contains("-demo") }
 
-    /// `-demoSaved`: show it as a saved scan. `-demoBadCRC`: one byte corrupted, as a batch with a
-    /// different encryption would look.
+    /// `-demoSaved`: show it as a saved scan. `-demoBadCRC`: one body byte corrupted, as when a read
+    /// overlaps the sensor's once-a-minute memory update.
     static var saved: Bool { ProcessInfo.processInfo.arguments.contains("-demoSaved") }
     static var badCRC: Bool { ProcessInfo.processInfo.arguments.contains("-demoBadCRC") }
 

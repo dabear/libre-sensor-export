@@ -42,6 +42,9 @@ struct Export {
     var trustworthy: Bool { parsed?.crcOK == true }
     /// Readings (tables, chart) exist for this scan.
     var hasReadings: Bool { parsed != nil }
+    /// Header and footer CRCs match: the scheme is right. The body changes every minute, so a body
+    /// mismatch alone usually means the read overlapped an update.
+    var decrypts: Bool { parsed.map { $0.headerCRC.ok && $0.footerCRC.ok } ?? false }
 
     /// Whether the FRAM decrypted with the first-generation scheme (what LibreTransmitter#67 needs).
     var cryptoSummary: String {
@@ -49,8 +52,11 @@ struct Export {
         case .notRead:
             return patch.isLibre3 ? "not read (Libre 3)" : patch.generation == 2 ? "not read (Gen2)" : "not read"
         case .none: return "not encrypted (CRCs match as read)"
-        case .libre2: return parsed?.crcOK == true ? "yes, all CRCs match" : "no, CRCs don't match"
-        case .us14day: return parsed?.crcOK == true ? "US 14 day scheme, CRCs match" : "US 14 day scheme, CRCs don't match"
+        case .libre2:
+            return !decrypts ? "no, CRCs don't match" : parsed?.bodyCRC.ok == true ? "yes, all CRCs match" : "yes; body CRC mismatch, scan again"
+        case .us14day:
+            return !decrypts ? "US 14 day scheme, CRCs don't match"
+                : parsed?.bodyCRC.ok == true ? "US 14 day scheme, CRCs match" : "US 14 day scheme; body CRC mismatch, scan again"
         case .undecryptable: return "can't decrypt without patch info"
         }
     }
@@ -58,6 +64,9 @@ struct Export {
     /// Why there are no readings, when there aren't.
     var notice: String? {
         if let p = parsed, !p.crcOK {
+            if p.headerCRC.ok && p.footerCRC.ok {
+                return "Only the body CRC doesn't match: the sensor probably updated its memory during the read. Scan again. Until then the glucose, chart and dates are hidden."
+            }
             return "The CRCs don't match after \(encryption == .none ? "reading" : "decrypting"), so the glucose, dates and readings are likely garbage and are hidden here. Readings and Technical still show what was decoded."
         }
         guard parsed == nil else { return nil }
@@ -79,7 +88,8 @@ func makeExport(_ r: ScanResult) -> Export {
     var fram: [UInt8] = []
     let raw = r.framEncrypted
     if raw.count >= 344 {
-        let plain = [0..<24, 24..<320, 320..<344].allSatisfy { Libre2FRAM.crcCheck(raw[$0]).ok }
+        // header and footer only: the body changes every minute and can fail when a read overlaps an update
+        let plain = Libre2FRAM.crcCheck(raw[0..<24]).ok && Libre2FRAM.crcCheck(raw[320..<344]).ok
         if plain {
             encryption = .none; fram = raw
         } else if let dec = Libre2FRAM.decryptFRAM(id: r.uid, info: r.patchInfo, data: raw) {
@@ -90,7 +100,9 @@ func makeExport(_ r: ScanResult) -> Export {
     }
     let parsed = fram.isEmpty || patch.isLibrePro ? nil : SensorParse.parse(uid: r.uid, patchInfo: r.patchInfo, fram: fram)
     // Libre 3 serials aren't derived from the UID like Libre 1/2 ones; "–" means unknown
-    let serial = patch.isLibre3 ? "–" : SensorParse.serialNumber(uid: r.uid, patchInfo: r.patchInfo)
+    // (an encrypted sensor that gave no patch info has an unknown family digit)
+    let serial = patch.isLibre3 || (patch.raw.isEmpty && encryption != .none && encryption != .notRead) ? "–"
+        : SensorParse.serialNumber(uid: r.uid, patchInfo: r.patchInfo)
 
     func records(_ rs: [Record]) -> [[String: Any]] {
         rs.map {
@@ -138,15 +150,18 @@ func makeExport(_ r: ScanResult) -> Export {
         "history_records": records(parsed?.history ?? []),
     ]
     payload["patch_info_error"] = r.patchInfoError
-    if !raw.isEmpty { payload["decrypts_gen1"] = encryption == .libre2 && parsed?.crcOK == true }
+    if !raw.isEmpty { payload["decrypts_gen1"] = encryption == .libre2 && (parsed.map { $0.headerCRC.ok && $0.footerCRC.ok } ?? false) }
     if let p = parsed {
         payload["sensor_state"] = p.state
+        payload["crc_ok"] = p.crcOK
         payload["max_minutes_wear"] = p.maxMinutesWear
         payload["next_trend_block"] = p.nextTrendBlock
         payload["next_history_block"] = p.nextHistoryBlock
         payload["fram_region"] = p.regionByte
-        payload["started_at"] = iso.string(from: r.scannedAt.addingTimeInterval(-60 * Double(p.minutesSinceStart)))
-        payload["ends_at"] = iso.string(from: r.scannedAt.addingTimeInterval(60 * Double(p.maxMinutesWear - p.minutesSinceStart)))
+        if p.state >= 2 {   // a sensor that hasn't started has no start or end yet
+            payload["started_at"] = iso.string(from: r.scannedAt.addingTimeInterval(-60 * Double(p.minutesSinceStart)))
+            payload["ends_at"] = iso.string(from: r.scannedAt.addingTimeInterval(60 * Double(p.maxMinutesWear - p.minutesSinceStart)))
+        }
         payload["trend_rate_mgdl_per_min"] = p.trendRate.map { ($0 * 100).rounded() / 100 }
         payload["crc"] = ["header": ["stored": p.headerCRC.stored, "computed": p.headerCRC.computed],
                           "body": ["stored": p.bodyCRC.stored, "computed": p.bodyCRC.computed],
@@ -167,14 +182,15 @@ func makeReport(_ e: Export) -> String {
     }
     var lines = ["Libre Export report",
                  "Patch info: \(patchText)" + (p.raw.count > 4 ? " (bytes 4 and up left out)" : "")]
-    if let b0 = p.raw.first, let f = p.family, let sec = p.securityNibble {
+    if !p.isLibre3, let b0 = p.raw.first, let f = p.family, let sec = p.securityNibble {
         lines.append("Byte 0 \(Hex.byte(Int(b0))) · family \(f) (\(p.familyName)) · security version \(sec) → \(p.generationShort) · region \(p.regionName)\(p.regionCode.map { " (\(Hex.byte($0)))" } ?? "")")
     }
     if let err = e.result.patchInfoError { lines.append("Patch info not answered: \(err)") }
     lines.append("LibreTransmitter type: \(p.sensorType) (main) · \(p.sensorTypePR67) (PR #67)")
-    lines.append("FRAM encryption: \(e.encryption.label) · Gen1 crypto: \(e.cryptoSummary)")
-    if let s = e.parsed {
-        lines.append("State: \(SensorLabels.state(s.state)) · age \(s.ageHuman) · wear time \(ParsedSensor.human(s.maxMinutesWear))")
+    lines.append("\(e.encryption == .libre2 || e.encryption == .us14day ? "Decryption tried" : "FRAM encryption"): \(e.encryption.label) · Gen1 crypto: \(e.cryptoSummary)")
+    if let s = e.parsed, e.trustworthy {
+        // age to the hour: with the scan date it doesn't pin down the exact start minute
+        lines.append("State: \(SensorLabels.state(s.state)) · age \(s.minutesSinceStart / 1440)d \((s.minutesSinceStart % 1440) / 60)h · wear time \(ParsedSensor.human(s.maxMinutesWear))")
         let flagged = (s.trend + s.history).filter { $0.errorBits != 0 }.count
         if flagged > 0 { lines.append("Readings with quality flags: \(flagged) of \(s.trend.count + s.history.count)") }
     }
@@ -182,7 +198,7 @@ func makeReport(_ e: Export) -> String {
     var chip = "NFC chip: \(SensorLabels.icManufacturer(t.icManufacturerCode)) (\(Hex.byte(t.icManufacturerCode)))"
     if let si = t.systemInfo { chip += " · \(si.totalBlocks) blocks × \(si.blockSize) bytes · IC ref \(si.icReference < 0 ? "–" : Hex.byte(si.icReference))" }
     lines.append(chip)
-    lines.append("Scanned: \(ISO8601DateFormatter().string(from: e.result.scannedAt))")
+    lines.append("Scanned: \(e.result.scannedAt.formatted(.iso8601.year().month().day()))")
     let info = Bundle.main.infoDictionary
     let os = ProcessInfo.processInfo.operatingSystemVersion
     lines.append("App: Libre Export \(info?["CFBundleShortVersionString"] as? String ?? "?") (\(info?["CFBundleVersion"] as? String ?? "?")) · iOS \(os.majorVersion).\(os.minorVersion).\(os.patchVersion) · \(deviceModel())")
@@ -203,5 +219,12 @@ func exportFile(_ e: Export) -> URL? {
     f.locale = Locale(identifier: "en_US_POSIX")
     let url = FileManager.default.temporaryDirectory
         .appendingPathComponent("libre-export-\(f.string(from: e.result.scannedAt)).json")
-    do { try e.prettyJSON.write(to: url, options: .atomic); return url } catch { return nil }
+    do { try e.prettyJSON.write(to: url, options: [.atomic, .completeFileProtection]); return url } catch { return nil }
+}
+
+/// Deletes JSON files left from earlier shares (they hold everything, including identifiers).
+func removeExportFiles() {
+    let tmp = FileManager.default.temporaryDirectory
+    for f in (try? FileManager.default.contentsOfDirectory(at: tmp, includingPropertiesForKeys: nil)) ?? []
+    where f.lastPathComponent.hasPrefix("libre-export-") { try? FileManager.default.removeItem(at: f) }
 }

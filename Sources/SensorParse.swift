@@ -35,7 +35,7 @@ struct ParsedSensor {
     var minutesLeft: Int { max(maxMinutesWear - minutesSinceStart, 0) }
     /// Minutes of the 1 h warm-up still to go (LibreTransmitter's warmupPeriod), nil when done.
     var warmupMinutesLeft: Int? {
-        (state <= 3 && minutesSinceStart < 60) ? 60 - minutesSinceStart : nil
+        (state == 2 && minutesSinceStart < 60) ? 60 - minutesSinceStart : nil   // not for state 1 (not started)
     }
     /// Minutes since the wear time ran out, nil while it hasn't.
     var expiredMinutesAgo: Int? {
@@ -109,7 +109,9 @@ enum SensorParse {
             let rawAdj = (Libre2FRAM.readBits(b, 0, 0x2f, 1) != 0) ? -adj : adj
             let t = temperature(rawTemp, rawAdj, i6)
             var g: Double?
-            if rawGlucose > 0, let t { g = glucose(rawGlucose: rawGlucose, i2: i2, i3: cal3, i4: i4, temp: t) }
+            // as LibreTransmitter: values outside (0, 500] mg/dL aren't readings (the raw values stay)
+            if rawGlucose > 0, let t, let v = glucose(rawGlucose: rawGlucose, i2: i2, i3: cal3, i4: i4, temp: t),
+               v > 0, v <= 500 { g = v }
             return Record(minuteOffset: minuteOffset, rawGlucose: rawGlucose, rawTemperature: rawTemp,
                           rawTemperatureAdjustment: rawAdj, temperature: t, glucose: g,
                           errorBits: Libre2FRAM.readBits(b, 0, 0xe, 0xc))
