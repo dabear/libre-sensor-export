@@ -185,7 +185,8 @@ struct StatusCard: View {
             } else {
                 if let w = p.warmupMinutesLeft { KV("Warm-up", "ready in \(w) min") }
                 KV("Age", "\(p.ageHuman)  ·  \(p.minutesSinceStart) min")
-                KV("Wear time", "\(ParsedSensor.human(p.maxMinutesWear))  ·  \(p.maxMinutesWear) min")
+                KV("Wear time", "\(ParsedSensor.human(p.maxMinutesWear))  ·  \(p.maxMinutesWear) min"
+                   + (p.maxMinutesWear != 20160 ? " (not 14 days)" : ""))
                 if p.state >= 4 { KV("Ended", "\(SensorLabels.state(p.state)) at age \(p.ageHuman)") }
                 else if let x = p.expiredMinutesAgo { KV("Expired", "\(ParsedSensor.human(x)) ago") }
                 else { KV("Left", "\(p.leftHuman)  ·  \(p.minutesLeft) min") }

@@ -165,18 +165,17 @@ final class NFCReader: ObservableObject {
         }
         let total = info.systemInfo.map(\.totalBlocks).flatMap { $0 > 0 ? $0 : nil }
 
-        // Block security status, 64 blocks per request.
+        // Block security status of the FRAM blocks only, in small requests (a Libre 2 dropped the
+        // connection when asked for 64 blocks at once), each tried twice.
         var statuses: [Int] = []
-        let count = min(total ?? 43, 256)
-        var first = 0
-        while first < count {
-            let n = min(64, count - first)
+        var dropped = false
+        for range in chunks(count: FRAMLayout.blocks, size: 8) {
             do {
-                statuses += try await securityStatus(tag, NSRange(location: first, length: n))
-                first += n
+                statuses += try await attempt(2) { try await securityStatus(tag, range) }
             } catch {
-                info.blockSecurityError = statuses.isEmpty ? error.localizedDescription
-                                                           : "from block \(first): \(error.localizedDescription)"
+                dropped = isFinal(error)
+                let read = statuses.isEmpty ? "" : "blocks 0–\(statuses.count - 1) read; then "
+                info.blockSecurityError = read + error.localizedDescription
                 break
             }
         }
@@ -184,11 +183,22 @@ final class NFCReader: ObservableObject {
 
         if deep {
             // Libre 1 memory is 244 blocks; use the tag's own count when it gave one.
-            let (bytes, note) = await extraMemory(tag, session: session, end: min(total ?? 244, 256))
+            let (bytes, firstNote) = await extraMemory(tag, session: session, end: min(total ?? 244, 256))
+            var note = firstNote
+            if dropped, bytes.isEmpty {
+                // after a dropped connection a "refused" block may just be no connection
+                note += " (the connection had dropped earlier in this scan, so this may not be a refusal)"
+            }
             info.extraMemory = bytes
             info.extraMemoryNote = note
         }
         return info
+    }
+
+    /// `count` blocks from block 0 as ranges of at most `size` blocks.
+    nonisolated static func chunks(count: Int, size: Int) -> [NSRange] {
+        guard count > 0, size > 0 else { return [] }
+        return stride(from: 0, to: count, by: size).map { NSRange(location: $0, length: min(size, count - $0)) }
     }
 
     private nonisolated static func securityStatus(_ tag: NFCISO15693Tag, _ range: NSRange) async throws -> [Int] {

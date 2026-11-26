@@ -171,7 +171,7 @@ enum SensorLabels {
         case 0x04: return "NXP"
         case 0x07: return "Texas Instruments"
         case 0x16: return "EM Microelectronic"
-        default: return "Unknown"
+        default: return "not in the app's list"   // e.g. 0x7A on a 2026 Libre 2
         }
     }
 }

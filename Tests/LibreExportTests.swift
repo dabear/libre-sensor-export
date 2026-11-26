@@ -106,3 +106,13 @@ final class LibreExportTests: XCTestCase {
         }
     }
 }
+
+final class NFCChunkTests: XCTestCase {
+    func testLockStatusChunks() {
+        let ranges = NFCReader.chunks(count: FRAMLayout.blocks, size: 8)
+        XCTAssertEqual(ranges.count, 6)
+        XCTAssertEqual(ranges.map(\.length).reduce(0, +), 43)
+        XCTAssertEqual(ranges.last, NSRange(location: 40, length: 3))
+        XCTAssertTrue(NFCReader.chunks(count: 0, size: 8).isEmpty)
+    }
+}
