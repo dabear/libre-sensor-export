@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		021ABC86B011408C94358A9D /* SensorMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = 707DECC4316EE56DB859582A /* SensorMetadata.swift */; };
+		2609F46DB7342145B886A3AC /* DemoScan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72F3FE920BE118D8C2A64158 /* DemoScan.swift */; };
 		459C4347197662DD1ABC9EE4 /* Libre2FRAM.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AC8E29365578380136B3A2D /* Libre2FRAM.swift */; };
 		5281804A2EC9A5D47D1C7F66 /* SensorExportApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C585FD214D3C3182DDC2683 /* SensorExportApp.swift */; };
 		AFD049CF302AA6788083FADD /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17AAC495FA295892A6C117A /* ContentView.swift */; };
@@ -19,6 +20,7 @@
 /* Begin PBXFileReference section */
 		3D0F0D1AE86179C9083CFDD0 /* LibreSensorExport.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = LibreSensorExport.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		707DECC4316EE56DB859582A /* SensorMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorMetadata.swift; sourceTree = "<group>"; };
+		72F3FE920BE118D8C2A64158 /* DemoScan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoScan.swift; sourceTree = "<group>"; };
 		75A7B585CD6C540E5D03CEAB /* NFCReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NFCReader.swift; sourceTree = "<group>"; };
 		8C585FD214D3C3182DDC2683 /* SensorExportApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorExportApp.swift; sourceTree = "<group>"; };
 		9AC8E29365578380136B3A2D /* Libre2FRAM.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Libre2FRAM.swift; sourceTree = "<group>"; };
@@ -43,6 +45,7 @@
 			isa = PBXGroup;
 			children = (
 				C17AAC495FA295892A6C117A /* ContentView.swift */,
+				72F3FE920BE118D8C2A64158 /* DemoScan.swift */,
 				9AC8E29365578380136B3A2D /* Libre2FRAM.swift */,
 				75A7B585CD6C540E5D03CEAB /* NFCReader.swift */,
 				8C585FD214D3C3182DDC2683 /* SensorExportApp.swift */,
@@ -130,6 +133,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AFD049CF302AA6788083FADD /* ContentView.swift in Sources */,
+				2609F46DB7342145B886A3AC /* DemoScan.swift in Sources */,
 				459C4347197662DD1ABC9EE4 /* Libre2FRAM.swift in Sources */,
 				F9C57B3E46E2E2C273CF73CB /* NFCReader.swift in Sources */,
 				5281804A2EC9A5D47D1C7F66 /* SensorExportApp.swift in Sources */,

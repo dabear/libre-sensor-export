@@ -120,6 +120,9 @@ struct ContentView: View {
         .sheet(isPresented: $showShare) { if let b = export?.base64 { ShareSheet(items: [b]) } }
         .onChange(of: nfc.scanning) { _, scanning in if scanning { export = nil } }
         .onChange(of: nfc.result?.scannedAt) { _, _ in export = nfc.result.map(makeExport) }
+        #if DEBUG
+        .onAppear { if DemoScan.isOn, nfc.result == nil { export = makeExport(DemoScan.result()) } }
+        #endif
     }
 }
 
@@ -214,7 +217,7 @@ private struct DetailCard: View {
             KV("Ends", dateTime(scannedAt.addingTimeInterval(60 * Double(p.minutesLeft))))
             KV("Scanned", dateTime(scannedAt))
             KV("Region", "\(SensorLabels.region(p.regionByte)) (\(Hex.byte(p.regionByte)), byte 323)")
-            KV("Ring index", "trend \(p.nextTrendBlock) / 16 · history \(p.nextHistoryBlock) / 32")
+            KV("Ring index", "trend \(p.nextTrendBlock) · history \(p.nextHistoryBlock)")
             Divider().padding(.vertical, 2)
             KV("i1 · i2", "\(p.i1) · \(p.i2)")
             KV("i3 · i4", "\(Int(p.i3)) · \(Int(p.i4))")

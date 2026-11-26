@@ -4,6 +4,11 @@ A tiny ad-hoc iOS app that scans a FreeStyle Libre 2 sensor over NFC, shows its
 data on-device for verification, and shares a base64 export for offline analysis.
 Not a medical device; for your own data research only.
 
+<p align="center">
+  <img src="docs/screenshot.png" width="300" alt="Libre Export after a scan: the current glucose, CRC checks and the sensor's FRAM details">
+  <br><sub>Screenshot with a made-up sensor (Simulator demo mode).</sub>
+</p>
+
 ## What it does
 - **Scan** your sensor over NFC (hold it to the top of the phone).
 - **Verify on-device:** the current glucose computed from the raw records (compare
@@ -109,6 +114,9 @@ Added later, same format name (readers of the fields above are unaffected):
 `temperature_c` and `glucose_mgdl` when they can be computed.
 
 ## Notes
+- **Demo mode:** the Simulator has no NFC. A Debug build launched with the
+  argument `-demo` (Xcode: Product → Scheme → Edit Scheme → Run → Arguments)
+  shows a made-up sensor, as in the screenshot above.
 - **Changing the project:** `project.yml` is the source of the Xcode project;
   after editing it run `brew install xcodegen && xcodegen`.
 - **Gen2 sensors:** the app captures UID + patch info; the FRAM needs the
