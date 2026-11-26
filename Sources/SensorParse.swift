@@ -9,6 +9,7 @@ struct Record {
     let rawTemperatureAdjustment: Int
     var temperature: Double?    // °C via the thermistor formula
     var glucose: Double?        // mg/dL via the calibration
+    var errorBits: Int = 0      // SensorLabels.measurementErrors; 0 = no flags
 }
 
 /// One FRAM region's CRC: the two stored bytes and the CRC of the rest.
@@ -32,6 +33,24 @@ struct ParsedSensor {
     let history: [Record]       // 32 points, 15 min apart, newest first
     var crcOK: Bool { headerCRC.ok && bodyCRC.ok && footerCRC.ok }
     var minutesLeft: Int { max(maxMinutesWear - minutesSinceStart, 0) }
+    /// Minutes of the 1 h warm-up still to go (LibreTransmitter's warmupPeriod), nil when done.
+    var warmupMinutesLeft: Int? {
+        (state <= 3 && minutesSinceStart < 60) ? 60 - minutesSinceStart : nil
+    }
+    /// Minutes since the wear time ran out, nil while it hasn't.
+    var expiredMinutesAgo: Int? {
+        maxMinutesWear > 0 && minutesSinceStart > maxMinutesWear ? minutesSinceStart - maxMinutesWear : nil
+    }
+    /// mg/dL per minute: least-squares slope over the last 15 trend minutes (needs 5 values).
+    var trendRate: Double? {
+        let pts = trend.filter { $0.minuteOffset < 15 }.compactMap { r in r.glucose.map { (Double(-r.minuteOffset), $0) } }
+        guard pts.count >= 5 else { return nil }
+        let n = Double(pts.count)
+        let mx = pts.map(\.0).reduce(0, +) / n, my = pts.map(\.1).reduce(0, +) / n
+        let sxx = pts.map { ($0.0 - mx) * ($0.0 - mx) }.reduce(0, +)
+        guard sxx > 0 else { return nil }
+        return pts.map { ($0.0 - mx) * ($0.1 - my) }.reduce(0, +) / sxx
+    }
     var ageHuman: String { Self.human(minutesSinceStart) }
     var leftHuman: String { Self.human(minutesLeft) }
     static func human(_ m: Int) -> String { "\(m / 1440)d \((m % 1440) / 60)h \(m % 60)m" }
@@ -92,7 +111,8 @@ enum SensorParse {
             var g: Double?
             if rawGlucose > 0, let t { g = glucose(rawGlucose: rawGlucose, i2: i2, i3: cal3, i4: i4, temp: t) }
             return Record(minuteOffset: minuteOffset, rawGlucose: rawGlucose, rawTemperature: rawTemp,
-                          rawTemperatureAdjustment: rawAdj, temperature: t, glucose: g)
+                          rawTemperatureAdjustment: rawAdj, temperature: t, glucose: g,
+                          errorBits: Libre2FRAM.readBits(b, 0, 0xe, 0xc))
         }
 
         // Trend: body 4..<100, 16 x 6 bytes, one per minute.
@@ -130,9 +150,10 @@ enum SensorParse {
 
     // Libre serial from UID + sensor family. Exact port of LibreTransmitter SensorSerialNumber.
     static func serialNumber(uid: [UInt8], patchInfo: [UInt8]) -> String {
-        guard uid.count == 8, patchInfo.count >= 3 else { return "-" }
+        guard uid.count == 8 else { return "–" }
         let lookup = Array("0123456789ACDEFGHJKLMNPQRTUVWXYZ")
-        let family = Int(patchInfo[2] >> 4)
+        // Libre 1 sensors that don't answer the patch info command: family 0
+        let family = patchInfo.count >= 3 ? Int(patchInfo[2] >> 4) : 0
         let b = Array(uid.reversed().suffix(6))   // 6 bytes
         let five: [UInt8] = [
             b[0] >> 3,

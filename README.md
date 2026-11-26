@@ -1,33 +1,52 @@
 # Libre Export
 
-A tiny ad-hoc iOS app that scans a FreeStyle Libre 2 sensor over NFC, shows its
-data on-device for verification, and shares a base64 export for offline analysis.
+A small iOS app that scans a FreeStyle Libre sensor over NFC, shows everything the
+sensor reveals, and shares it for offline analysis or bug reports. Made for
+checking new sensor batches (such as the "303" Libre 2 sensors in
+[LibreTransmitter#67](https://github.com/LoopKit/LibreTransmitter/pull/67)).
 Not a medical device; for your own data research only.
 
 <p align="center">
-  <img src="docs/screenshot.png" width="300" alt="Libre Export after a scan: the current glucose, CRC checks and the sensor's FRAM details">
+  <img src="docs/screenshot.png" width="300" alt="Libre Export after a scan: the current glucose with its rate of change, CRC checks and an 8-hour chart">
   <br><sub>Screenshot with a made-up sensor (Simulator demo mode).</sub>
 </p>
 
 ## What it does
-- **Scan** your sensor over NFC (hold it to the top of the phone).
-- **Verify on-device:** the current glucose computed from the raw records (compare
-  it against your Libre reader), plus everything else the scan reveals:
-  - **Sensor (FRAM):** serial, state, age, wear time and time left, start/end
-    dates, region byte, ring-buffer indices, calibration i1–i6, and each FRAM
-    CRC (stored vs computed).
-  - **Trend:** the last 16 minutes, raw values, temperature (°C) and mg/dL.
-  - **History:** the last 8 hours at 15-minute steps, with time, °C and mg/dL.
-  - **Patch info** (right under the reading): the raw bytes, byte 0, family,
-    security version and generation, region, the sensor type LibreTransmitter
-    gives it today and with [LibreTransmitter#67](https://github.com/LoopKit/LibreTransmitter/pull/67),
-    whether the FRAM decrypts with the first-generation scheme (all CRCs match),
-    the decryption word (bytes 4–5) and the serial. The line under the reading
-    sums it up for every scan, e.g. *Libre 2 · Europe · Gen1*.
-  - **NFC tag:** UID, IC manufacturer, IC serial, and ISO 15693 system info
-    (block count/size, IC reference, DSFID/AFI) when the sensor answers it.
-  - **Raw bytes:** the FRAM as read and decrypted, 8 bytes per row, selectable.
-- **Export:** a base64 string (JSON) with all of the above. Copy or Share it.
+- **Scan** a sensor over NFC: hold the top of the iPhone against it.
+- **The reading** at the top: glucose computed from the sensor's raw values,
+  trend arrow and rate of change, serial, age, and a one-line summary such as
+  *Libre 2 · Europe · Gen1*. Warm-up and expiry are shown when they apply.
+- **Overview:** CRC checks; an 8-hour chart (history plus the last 16 minutes,
+  70–180 mg/dL shaded, readings with quality flags as triangles); the **Patch
+  info** card (raw bytes, byte 0, family, security version and generation, region,
+  the sensor type LibreTransmitter gives it today and with PR #67, whether the
+  memory decrypts with the first-generation scheme); the sensor's state, wear time,
+  time left, start and end; and sharing.
+- **Readings:** the last 16 minutes and the last 8 hours as tables, with raw
+  values, temperature, glucose and the quality flags each reading carries (only
+  for sensors whose memory was read).
+- **Technical:** encryption, calibration (i1–i6), CRC values, ring-buffer indices,
+  the region byte in memory; the NFC chip (UID, maker, IC serial, memory size, IC
+  reference, which blocks are locked); and the raw bytes, 8 bytes per row.
+- **Saved scans** (clock button): every scan is kept on the iPhone, grouped by
+  sensor, so you can look at one again or compare it over time. A saved scan is
+  marked *Saved scan · date*; the newest one opens when the app starts. Swipe to
+  delete; touch and hold for *Copy report*.
+- **If the memory fails its CRCs** (for example a batch with a different
+  encryption), no glucose, chart or dates are shown, since they'd be garbage; the
+  failing CRC is red and the raw values stay available under Readings and Technical.
+- **Settings** (gear button): mg/dL or mmol/L (defaults to your region), and
+  *Read all memory*, which also reads the blocks after the 344-byte FRAM (slower;
+  shows where the sensor stops answering).
+- **Share:** *Copy report* gives a short text without the UID, serial, readings or
+  patch info from byte 4, safe to paste into an issue or PR. *JSON file* and
+  *Base64* contain everything.
+
+**Sensors:** Libre 2 (first generation, EU, US, CA) and Libre US 14 day are read
+and decrypted; Libre 1, whose memory isn't encrypted, is read as is, also when it
+doesn't answer the patch info command. Gen2 Libre 2 and Libre 3 show their patch
+info and chip details only (their memory needs an authenticated read or isn't
+available over NFC). Libre Pro/H is read, but its memory layout isn't parsed.
 
 ## Install on your iPhone
 
@@ -95,12 +114,13 @@ without any edits. To use your own, set `LIBRE_EXPORT_BUNDLE_ID` in
 `Config/Local.xcconfig`.
 
 ## Using it
-Tap **Scan sensor** and hold the top of the iPhone against the sensor until it
-vibrates. Everything the sensor revealed is shown below the reading; the
-**Export** card at the bottom copies or shares it all as one base64 string.
+Tap **Scan sensor** and hold the top of the iPhone against the sensor. The phone
+shows the progress and vibrates when it's done; if the read is cut short, hold
+still and scan again. The scan is saved automatically.
 
-The export contains your sensor's identity (UID, serial) and your glucose data.
-Only share it with people you'd share that with.
+The JSON file and base64 contain your sensor's identity (UID, serial) and your
+glucose data. Only share them with people you'd share that with; for public
+issues and PRs use **Copy report**.
 
 ## Checking a new sensor batch
 Made for confirming [LibreTransmitter#67](https://github.com/LoopKit/LibreTransmitter/pull/67)
@@ -116,8 +136,9 @@ Made for confirming [LibreTransmitter#67](https://github.com/LoopKit/LibreTransm
   Unknown. *No, CRCs don't match* would mean the PR alone won't make these sensors work.
 - Compare the glucose with the Libre app or reader.
 
-Share the export with the PR (it carries all of this), keeping in mind it includes
-the sensor's UID and serial.
+Then tap **Copy report** (Overview, at the bottom) and paste it into the PR: it
+has all of the above, plus the iOS version, iPhone model and scan time, without
+the sensor's identity.
 
 ## Export format (`libre2-fram-export-v1`)
 Base64 of a JSON object: `uid`, `patch_info`, `generation`, `fram_encrypted_hex`,
@@ -135,14 +156,21 @@ Added later, same format name (readers of the fields above are unaffected):
 `history_records` (same shape as `trend_records`), and on each record
 `temperature_c` and `glucose_mgdl` when they can be computed.
 
+Version 1.1 adds: `fram_encryption` (`none`, `libre2`, `us14day`,
+`undecryptable`, `not_read`; for `none`, `fram_decrypted_hex` is the memory as
+read), `patch_info_error` (when the sensor didn't answer it),
+`trend_rate_mgdl_per_min`, `error_flags` on each record (LibreTransmitter's
+MeasurementError bits; 0 = none), and in `tag`: `block_security` (one status per
+block from 0, bit 0 = locked), `block_security_error`, `extra_memory_hex`,
+`extra_memory_from_block` and `extra_memory_note` (with *Read all memory*).
+
 ## Notes
 - **Demo mode:** the Simulator has no NFC. A Debug build launched with the
   argument `-demo` (Xcode: Product → Scheme → Edit Scheme → Run → Arguments)
   shows a made-up sensor (patch info `84 0E 30 01`, a 303 sensor), as in the
-  screenshot above.
+  screenshot above; add `-demoTab readings` or `-demoTab technical` to open that
+  tab, `-demoSaved` to show it as a saved scan, or `-demoBadCRC` to see how a
+  memory that fails its CRCs looks. Demo scans aren't saved.
 - **Changing the project:** `project.yml` is the source of the Xcode project;
   after editing it run `brew install xcodegen && xcodegen`.
-- **Gen2 sensors:** the app captures UID + patch info; the FRAM needs the
-  authenticated read, so no values are shown for Gen2 yet (the export still carries
-  the identity).
 - Clean-room: FRAM decrypt/parse ported from MIT LibreTransmitter; no Abbott binary.

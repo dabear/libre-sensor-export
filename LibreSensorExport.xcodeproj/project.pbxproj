@@ -11,14 +11,26 @@
 		2609F46DB7342145B886A3AC /* DemoScan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72F3FE920BE118D8C2A64158 /* DemoScan.swift */; };
 		459C4347197662DD1ABC9EE4 /* Libre2FRAM.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AC8E29365578380136B3A2D /* Libre2FRAM.swift */; };
 		5281804A2EC9A5D47D1C7F66 /* SensorExportApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C585FD214D3C3182DDC2683 /* SensorExportApp.swift */; };
+		5AE9807FCE4B8BCC037EB234 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6A2DA47470934728D4FAFF90 /* Assets.xcassets */; };
+		763BE5BD971FCAF31BF23EE7 /* ScanStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CD4B458AF2CD7BBE4E5B823 /* ScanStore.swift */; };
 		AFD049CF302AA6788083FADD /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17AAC495FA295892A6C117A /* ContentView.swift */; };
 		BF91077E3CD43B4A69BAF99E /* SensorParse.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD53C2E28BA964B2791F6808 /* SensorParse.swift */; };
+		C4A7B39207335554EB6BAB7D /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E8EEEA2FECA58578667EB3D /* HistoryView.swift */; };
+		D71B534481257CBA4118A78A /* Export.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED4A509F58F140A22E4E6B8D /* Export.swift */; };
+		E5FF1BCBC070A954441923A1 /* Cards.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AC174990E0A0E8C98EAE805 /* Cards.swift */; };
 		F8AC50EEEC959A1E191FDFF4 /* TablesData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A257889CE8315E4251EFCF0D /* TablesData.swift */; };
 		F9C57B3E46E2E2C273CF73CB /* NFCReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75A7B585CD6C540E5D03CEAB /* NFCReader.swift */; };
+		FA217066B9148372ED3D0F97 /* GlucoseChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16BEAE63C987F2503A12661F /* GlucoseChart.swift */; };
+		FB07A645A67A4A66331692BC /* Units.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1BE73BA8CE30FE5B1D51950 /* Units.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		16BEAE63C987F2503A12661F /* GlucoseChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlucoseChart.swift; sourceTree = "<group>"; };
+		1CD4B458AF2CD7BBE4E5B823 /* ScanStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanStore.swift; sourceTree = "<group>"; };
+		2AC174990E0A0E8C98EAE805 /* Cards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cards.swift; sourceTree = "<group>"; };
 		3D0F0D1AE86179C9083CFDD0 /* LibreSensorExport.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = LibreSensorExport.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4E8EEEA2FECA58578667EB3D /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
+		6A2DA47470934728D4FAFF90 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		707DECC4316EE56DB859582A /* SensorMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorMetadata.swift; sourceTree = "<group>"; };
 		72F3FE920BE118D8C2A64158 /* DemoScan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoScan.swift; sourceTree = "<group>"; };
 		75A7B585CD6C540E5D03CEAB /* NFCReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NFCReader.swift; sourceTree = "<group>"; };
@@ -29,6 +41,8 @@
 		BE55673816A06EA13682D8F6 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 		BE60218E499064A3EC781BC5 /* Local.xcconfig.example */ = {isa = PBXFileReference; path = Local.xcconfig.example; sourceTree = "<group>"; };
 		C17AAC495FA295892A6C117A /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		D1BE73BA8CE30FE5B1D51950 /* Units.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Units.swift; sourceTree = "<group>"; };
+		ED4A509F58F140A22E4E6B8D /* Export.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Export.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -44,14 +58,20 @@
 		4E1F03CB9BDBB705C90FC270 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				2AC174990E0A0E8C98EAE805 /* Cards.swift */,
 				C17AAC495FA295892A6C117A /* ContentView.swift */,
 				72F3FE920BE118D8C2A64158 /* DemoScan.swift */,
+				ED4A509F58F140A22E4E6B8D /* Export.swift */,
+				16BEAE63C987F2503A12661F /* GlucoseChart.swift */,
+				4E8EEEA2FECA58578667EB3D /* HistoryView.swift */,
 				9AC8E29365578380136B3A2D /* Libre2FRAM.swift */,
 				75A7B585CD6C540E5D03CEAB /* NFCReader.swift */,
+				1CD4B458AF2CD7BBE4E5B823 /* ScanStore.swift */,
 				8C585FD214D3C3182DDC2683 /* SensorExportApp.swift */,
 				707DECC4316EE56DB859582A /* SensorMetadata.swift */,
 				AD53C2E28BA964B2791F6808 /* SensorParse.swift */,
 				A257889CE8315E4251EFCF0D /* TablesData.swift */,
+				D1BE73BA8CE30FE5B1D51950 /* Units.swift */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -64,10 +84,19 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		9681D7ACC18B6D7546F36EF9 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				6A2DA47470934728D4FAFF90 /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
 		9B5BBDBD733FF00ABE4F6455 = {
 			isa = PBXGroup;
 			children = (
 				4A06D89C45A744A1E57AFA77 /* Config */,
+				9681D7ACC18B6D7546F36EF9 /* Resources */,
 				4E1F03CB9BDBB705C90FC270 /* Sources */,
 				592254C9FEBD17A3EC275B51 /* Products */,
 			);
@@ -81,6 +110,7 @@
 			buildConfigurationList = DEE9EF1454E5881739AF92AA /* Build configuration list for PBXNativeTarget "LibreSensorExport" */;
 			buildPhases = (
 				7A91A30CB9F2D7060CBF6BA4 /* Sources */,
+				49121070B0E4C19F4EAAA10B /* Resources */,
 			);
 			buildRules = (
 			);
@@ -127,19 +157,36 @@
 		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		49121070B0E4C19F4EAAA10B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5AE9807FCE4B8BCC037EB234 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		7A91A30CB9F2D7060CBF6BA4 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E5FF1BCBC070A954441923A1 /* Cards.swift in Sources */,
 				AFD049CF302AA6788083FADD /* ContentView.swift in Sources */,
 				2609F46DB7342145B886A3AC /* DemoScan.swift in Sources */,
+				D71B534481257CBA4118A78A /* Export.swift in Sources */,
+				FA217066B9148372ED3D0F97 /* GlucoseChart.swift in Sources */,
+				C4A7B39207335554EB6BAB7D /* HistoryView.swift in Sources */,
 				459C4347197662DD1ABC9EE4 /* Libre2FRAM.swift in Sources */,
 				F9C57B3E46E2E2C273CF73CB /* NFCReader.swift in Sources */,
+				763BE5BD971FCAF31BF23EE7 /* ScanStore.swift in Sources */,
 				5281804A2EC9A5D47D1C7F66 /* SensorExportApp.swift in Sources */,
 				021ABC86B011408C94358A9D /* SensorMetadata.swift in Sources */,
 				BF91077E3CD43B4A69BAF99E /* SensorParse.swift in Sources */,
 				F8AC50EEEC959A1E191FDFF4 /* TablesData.swift in Sources */,
+				FB07A645A67A4A66331692BC /* Units.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -273,13 +320,13 @@
 				CODE_SIGN_ENTITLEMENTS = Generated/LibreSensorExport.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				INFOPLIST_FILE = Generated/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "$(LIBRE_EXPORT_BUNDLE_ID)";
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.0;
@@ -295,13 +342,13 @@
 				CODE_SIGN_ENTITLEMENTS = Generated/LibreSensorExport.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				INFOPLIST_FILE = Generated/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "$(LIBRE_EXPORT_BUNDLE_ID)";
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.0;

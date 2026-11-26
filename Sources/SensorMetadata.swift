@@ -4,7 +4,7 @@
 import Foundation
 
 /// ISO 15693 Get System Info answer. -1 means the tag left that field out.
-struct TagSystemInfo {
+struct TagSystemInfo: Codable {
     let dsfid: Int
     let afi: Int
     let blockSize: Int
@@ -13,11 +13,28 @@ struct TagSystemInfo {
 }
 
 /// What CoreNFC tells us about the tag itself.
-struct TagInfo {
+struct TagInfo: Codable {
     let icManufacturerCode: Int
     let icSerialNumber: [UInt8]
     var systemInfo: TagSystemInfo?
     var systemInfoError: String?
+    /// ISO 15693 block security status from block 0 (bit 0 set = block locked).
+    var blockSecurity: [Int]?
+    var blockSecurityError: String?
+    /// Blocks after the 43 FRAM blocks, from block 43 on (only with "Read all memory").
+    var extraMemory: [UInt8]?
+    /// How far that read got, and why it stopped.
+    var extraMemoryNote: String?
+}
+
+/// Runs of equal values, e.g. block security statuses: [(first block, last block, value)].
+func runs(_ values: [Int]) -> [(first: Int, last: Int, value: Int)] {
+    var out: [(first: Int, last: Int, value: Int)] = []
+    for (i, v) in values.enumerated() {
+        if let last = out.last, last.value == v, last.last == i - 1 { out[out.count - 1].last = i }
+        else { out.append((i, i, v)) }
+    }
+    return out
 }
 
 enum Hex {
@@ -78,14 +95,26 @@ struct PatchInfoDecoded {
     /// Low nibble of byte 2: the security version (9 or more on a family-3 patch = Gen2).
     var securityNibble: Int? { raw.count >= 3 ? Int(raw[2] & 0x0F) : nil }
     var generation: Int { Libre2FRAM.securityGeneration(raw) }
+    /// Libre 3 answers the patch info command with 24 bytes (as LibreTransmitter checks).
+    var isLibre3: Bool { raw.count == 24 }
+    /// Libre Pro/H keeps a different memory layout, which this app doesn't parse.
+    var isLibrePro: Bool { raw.first == 0x70 }
     var regionCode: Int? { raw.count >= 4 ? Int(raw[3]) : nil }
     /// Bytes 5..4, the word the Libre 2 FRAM decryption uses.
     var cryptoWord: Int? { raw.count >= 6 ? Int(raw[5]) << 8 | Int(raw[4]) : nil }
 
     var regionName: String { regionCode.map(SensorLabels.region) ?? "–" }
 
-    /// One line for the top of the screen, the same for every scan.
-    var summary: String { "\(sensorTypePR67) · \(regionName) · \(generationShort)" }
+    /// One line for the top of the screen, the same for every scan: type, then region and
+    /// generation where the Libre 2 decoding applies.
+    var summary: String {
+        if raw.isEmpty { return "No patch info" }
+        if isLibre3 { return "Libre 3" }
+        var parts = [sensorTypePR67]
+        if regionCode != nil { parts.append(regionName) }
+        if generation > 0 { parts.append(generationShort) }
+        return parts.joined(separator: " · ")
+    }
 
     var generationShort: String {
         switch generation {
@@ -127,6 +156,20 @@ enum SensorLabels {
         case 6: return "Failure"
         default: return "Unknown"
         }
+    }
+
+    /// Error bits of a glucose record (12 bits from bit 14), as LibreTransmitter's MeasurementError.
+    static func measurementErrors(_ bits: Int) -> [String] {
+        let names: [(Int, String)] = [
+            (0x001, "FIFO overflow"), (0x002, "filter delta"), (0x004, "work voltage"),
+            (0x008, "peak delta exceeded"), (0x010, "average delta exceeded"), (0x020, "RF"),
+            (0x040, "reference R"), (0x080, "signal saturated"), (0x100, "signal low"),
+            (0x800, "thermistor out of range"),
+        ]
+        var out = names.filter { bits & $0.0 != 0 }.map(\.1)
+        let unknown = bits & ~names.reduce(0) { $0 | $1.0 }
+        if unknown != 0 { out.append("unknown \(Hex.word(unknown))") }
+        return out
     }
 
     /// ISO/IEC 7816-6 IC manufacturer codes likely on a CGM patch.
