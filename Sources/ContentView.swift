@@ -42,7 +42,8 @@ func makeExport(_ r: ScanResult) -> Export {
         tag["total_blocks"] = si.totalBlocks; tag["ic_reference"] = si.icReference
     }
     if let e = r.tag.systemInfoError { tag["system_info_error"] = e }
-    var patchDecoded: [String: Any] = ["sensor_type": patch.sensorType, "generation": patch.generation]
+    var patchDecoded: [String: Any] = ["sensor_type": patch.sensorType, "sensor_type_pr67": patch.sensorTypePR67,
+                                       "generation": patch.generation]
     patchDecoded["family"] = patch.family
     patchDecoded["security"] = patch.securityNibble
     patchDecoded["region_code"] = patch.regionCode
@@ -62,6 +63,7 @@ func makeExport(_ r: ScanResult) -> Export {
         "trend_records": records(parsed?.trend ?? []),
         "history_records": records(parsed?.history ?? []),
     ]
+    if !r.framEncrypted.isEmpty { payload["decrypts_gen1"] = parsed?.crcOK ?? false }
     if let p = parsed {
         payload["sensor_state"] = p.state
         payload["max_minutes_wear"] = p.maxMinutesWear
@@ -95,17 +97,18 @@ struct ContentView: View {
                     HeroCard(export: export, scanning: nfc.scanning, status: nfc.status)
                     if let err = nfc.errorText { ErrorBanner(text: err) }
                     if let e = export {
-                        if let p = e.parsed {
-                            CRCRow(p: p)
-                            DetailCard(p: p, scannedAt: e.result.scannedAt)
-                            TrendCard(trend: p.trend)
-                            HistoryCard(history: p.history, scannedAt: e.result.scannedAt)
-                        } else {
+                        if let p = e.parsed { CRCRow(p: p) } else {
                             InfoCard(text: e.generation == 2
                                 ? "Gen2 sensor: captured UID + patch info. The FRAM needs the authenticated read, so no values here — the export still carries the identity."
                                 : "Captured, but the FRAM did not decrypt/parse. The raw bytes are in the export for offline analysis.")
                         }
-                        PatchInfoCard(patch: e.patch, serial: e.serial)
+                        PatchInfoCard(patch: e.patch, serial: e.serial, framRead: !e.result.framEncrypted.isEmpty,
+                                      parsed: e.parsed)
+                        if let p = e.parsed {
+                            DetailCard(p: p, scannedAt: e.result.scannedAt)
+                            TrendCard(trend: p.trend)
+                            HistoryCard(history: p.history, scannedAt: e.result.scannedAt)
+                        }
                         TagCard(uid: e.result.uid, tag: e.result.tag)
                         RawCard(e: e)
                         ExportCard(base64: e.base64, showShare: $showShare)
@@ -140,14 +143,14 @@ private struct HeroCard: View {
                     Text("mg/dL").font(.title3.weight(.medium)).foregroundStyle(.secondary)
                     Image(systemName: arrow(for: p.trend)).font(.title).foregroundStyle(glucoseColor(g))
                 }
-                Text("\(p.serial) · \(p.ageHuman) · Gen \(p.generation)")
+                Text("\(p.serial) · \(p.ageHuman)")
                     .font(.subheadline).foregroundStyle(.secondary)
+                Text(e.patch.summary).font(.subheadline).foregroundStyle(.secondary)
             } else if let e = export, !scanning {
                 Image(systemName: "sensor.tag.radiowaves.forward.fill")
                     .font(.system(size: 54)).foregroundStyle(.tint)
                 Text(e.serial).font(.title2.weight(.semibold).monospaced())
-                Text("\(e.patch.sensorType) · \(e.patch.generationLabel)")
-                    .font(.subheadline).foregroundStyle(.secondary)
+                Text(e.patch.summary).font(.subheadline).foregroundStyle(.secondary)
                 if let p = e.parsed {
                     Text("\(SensorLabels.state(p.state)) · \(p.ageHuman)")
                         .font(.footnote).foregroundStyle(.secondary)
@@ -216,7 +219,7 @@ private struct DetailCard: View {
             KV("Started", dateTime(scannedAt.addingTimeInterval(-60 * Double(p.minutesSinceStart))))
             KV("Ends", dateTime(scannedAt.addingTimeInterval(60 * Double(p.minutesLeft))))
             KV("Scanned", dateTime(scannedAt))
-            KV("Region", "\(SensorLabels.region(p.regionByte)) (\(Hex.byte(p.regionByte)), byte 323)")
+            KV("FRAM region", "\(SensorLabels.region(p.regionByte)) (\(Hex.byte(p.regionByte)), byte 323)")
             KV("Ring index", "trend \(p.nextTrendBlock) · history \(p.nextHistoryBlock)")
             Divider().padding(.vertical, 2)
             KV("i1 · i2", "\(p.i1) · \(p.i2)")
@@ -234,20 +237,28 @@ private struct DetailCard: View {
 }
 
 private struct PatchInfoCard: View {
-    let patch: PatchInfoDecoded; let serial: String
+    let patch: PatchInfoDecoded; let serial: String; let framRead: Bool; let parsed: ParsedSensor?
     var body: some View {
         Card(title: "Patch info", icon: "info.square") {
             KV("Raw", patch.raw.isEmpty ? "–" : Hex.string(patch.raw, separator: " "))
-            KV("Bytes", "\(patch.raw.count)")
-            KV("Type", patch.sensorType)
-            KV("Generation", patch.generationLabel)
-            if let f = patch.family, let sec = patch.securityNibble {
-                KV("Family", "\(f) · security \(sec)")
-            }
-            if let r = patch.regionCode { KV("Region", "\(SensorLabels.region(r)) (\(Hex.byte(r)))") }
+            if let b0 = patch.raw.first { KV("Byte 0", Hex.byte(Int(b0))) }
+            if let f = patch.family { KV("Family", "\(f) (\(patch.familyName))") }
+            if let sec = patch.securityNibble { KV("Security ver", "\(sec) → \(patch.generationShort)") }
+            if let r = patch.regionCode { KV("Region", "\(patch.regionName) (\(Hex.byte(r)))") }
+            KV("LT type", "\(patch.sensorType) (main)")
+            KV("", "\(patch.sensorTypePR67) (PR #67)")
+            KV("Gen1 crypto", gen1Crypto)
+            Divider().padding(.vertical, 2)
             if let w = patch.cryptoWord { KV("Bytes 4–5", Hex.word(w)) }
             KV("Serial", serial)
         }
+    }
+    /// Whether the FRAM decrypted with the first-generation Libre 2 scheme LibreTransmitter uses:
+    /// all three CRCs only match after a correct decryption.
+    private var gen1Crypto: String {
+        guard framRead else { return patch.generation == 2 ? "not read (Gen2)" : "not read" }
+        guard let p = parsed else { return "did not parse" }
+        return p.crcOK ? "yes, all CRCs match" : "no, CRCs don't match"
     }
 }
 

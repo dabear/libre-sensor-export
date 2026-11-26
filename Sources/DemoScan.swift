@@ -11,7 +11,7 @@ enum DemoScan {
         let uid: [UInt8] = [0x5A, 0x3C, 0x91, 0x27, 0x00, 0xA0, 0x07, 0xE0]
         return ScanResult(
             uid: uid,
-            patchInfo: [0x9D, 0x08, 0x30, 0x01, 0x4B, 0x2E],
+            patchInfo: [0x84, 0x0E, 0x30, 0x01, 0x4B, 0x2E],  // a "303" Libre 2 EU, as in LibreTransmitter#67
             framEncrypted: bytes(framHex),
             tag: TagInfo(icManufacturerCode: 0x07, icSerialNumber: Array(uid[0..<6].reversed()),
                          systemInfo: nil, systemInfoError: "demo data"),

@@ -18,8 +18,12 @@ Not a medical device; for your own data research only.
     CRC (stored vs computed).
   - **Trend:** the last 16 minutes, raw values, temperature (°C) and mg/dL.
   - **History:** the last 8 hours at 15-minute steps, with time, °C and mg/dL.
-  - **Patch info:** the raw bytes, sensor type, generation, family/security
-    nibbles, region and the decryption word (bytes 4–5).
+  - **Patch info** (right under the reading): the raw bytes, byte 0, family,
+    security version and generation, region, the sensor type LibreTransmitter
+    gives it today and with [LibreTransmitter#67](https://github.com/LoopKit/LibreTransmitter/pull/67),
+    whether the FRAM decrypts with the first-generation scheme (all CRCs match),
+    the decryption word (bytes 4–5) and the serial. The line under the reading
+    sums it up for every scan, e.g. *Libre 2 · Europe · Gen1*.
   - **NFC tag:** UID, IC manufacturer, IC serial, and ISO 15693 system info
     (block count/size, IC reference, DSFID/AFI) when the sensor answers it.
   - **Raw bytes:** the FRAM as read and decrypted, 8 bytes per row, selectable.
@@ -98,6 +102,23 @@ vibrates. Everything the sensor revealed is shown below the reading; the
 The export contains your sensor's identity (UID, serial) and your glucose data.
 Only share it with people you'd share that with.
 
+## Checking a new sensor batch
+Made for confirming [LibreTransmitter#67](https://github.com/LoopKit/LibreTransmitter/pull/67)
+(EU sensors with serials starting with 303). Scan the sensor and read the
+**Patch info** card:
+
+- **Raw** starts `84 0E 30 01`, **Family** 3, **Security ver** 0 → Gen1, **Region** Europe.
+- **LT type**: *Unknown (main)* and *Libre 2 (PR #67)*, i.e. today's
+  LibreTransmitter rejects it and the PR accepts it.
+- **Gen1 crypto: yes, all CRCs match** is what the PR couldn't test: the batch still
+  uses the first-generation encryption LibreTransmitter decrypts. The app decrypts by
+  family, not by LibreTransmitter's type list, so it tries even when *main* says
+  Unknown. *No, CRCs don't match* would mean the PR alone won't make these sensors work.
+- Compare the glucose with the Libre app or reader.
+
+Share the export with the PR (it carries all of this), keeping in mind it includes
+the sensor's UID and serial.
+
 ## Export format (`libre2-fram-export-v1`)
 Base64 of a JSON object: `uid`, `patch_info`, `generation`, `fram_encrypted_hex`,
 `fram_decrypted_hex`, `minutes_since_start`, `calibration{i1..i6}`, and
@@ -106,7 +127,8 @@ The `trend_records` feed directly into the independent-implementation harness.
 
 Added later, same format name (readers of the fields above are unaffected):
 `scanned_at` (time of the FRAM read), `serial`,
-`patch_info_decoded{sensor_type, generation, family, security, region_code, crypto_word}`,
+`patch_info_decoded{sensor_type, sensor_type_pr67, generation, family, security, region_code, crypto_word}`,
+`decrypts_gen1` (all CRCs match after first-generation decryption; only when the FRAM was read),
 `tag{ic_manufacturer_code, ic_serial_number, dsfid, afi, block_size, total_blocks, ic_reference | system_info_error}`,
 `sensor_state`, `max_minutes_wear`, `next_trend_block`, `next_history_block`,
 `fram_region`, `started_at`, `ends_at`, `crc{header|body|footer: {stored, computed}}`,
@@ -116,7 +138,8 @@ Added later, same format name (readers of the fields above are unaffected):
 ## Notes
 - **Demo mode:** the Simulator has no NFC. A Debug build launched with the
   argument `-demo` (Xcode: Product → Scheme → Edit Scheme → Run → Arguments)
-  shows a made-up sensor, as in the screenshot above.
+  shows a made-up sensor (patch info `84 0E 30 01`, a 303 sensor), as in the
+  screenshot above.
 - **Changing the project:** `project.yml` is the source of the Xcode project;
   after editing it run `brew install xcodegen && xcodegen`.
 - **Gen2 sensors:** the app captures UID + patch info; the FRAM needs the

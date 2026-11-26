@@ -32,7 +32,7 @@ enum Hex {
 struct PatchInfoDecoded {
     let raw: [UInt8]
 
-    /// LibreTransmitter `SensorType(patchInfo:)`.
+    /// LibreTransmitter `SensorType(patchInfo:)` on `main`, before LoopKit/LibreTransmitter#67.
     var sensorType: String {
         guard let b0 = raw.first else { return "Unknown" }
         switch b0 {
@@ -51,14 +51,49 @@ struct PatchInfoDecoded {
         }
     }
 
+    /// The same with LoopKit/LibreTransmitter#67: byte 0 `0x84` is Libre 2, and an unlisted
+    /// byte 0 is Libre 2 when the rest says first-generation Libre 2 EU.
+    var sensorTypePR67: String {
+        guard let b0 = raw.first else { return "Unknown" }
+        if b0 == 0x84 { return "Libre 2" }
+        let listed = [0xDF, 0xA2, 0xE5, 0xE6, 0x70, 0xC5, 0x9D, 0xC6, 0x7F, 0x76].contains(Int(b0))
+        if !listed, raw.count != 24, isFirstGenerationLibre2EU { return "Libre 2" }
+        return sensorType
+    }
+
+    /// PR #67's fallback rule: 6 bytes, family 3, security version below 9, region 0x01.
+    var isFirstGenerationLibre2EU: Bool {
+        raw.count == 6 && raw[2] >> 4 == 3 && raw[2] & 0x0F < 9 && raw[3] == 0x01
+    }
+
     /// High nibble of byte 2 (product family; also the serial number's first digit).
     var family: Int? { raw.count >= 3 ? Int(raw[2] >> 4) : nil }
-    /// Low nibble of byte 2 (9 or more on a family-3 patch = Gen2).
+    var familyName: String {
+        switch family {
+        case 3: return "Libre 2"
+        case nil: return "–"
+        default: return "other"
+        }
+    }
+    /// Low nibble of byte 2: the security version (9 or more on a family-3 patch = Gen2).
     var securityNibble: Int? { raw.count >= 3 ? Int(raw[2] & 0x0F) : nil }
     var generation: Int { Libre2FRAM.securityGeneration(raw) }
     var regionCode: Int? { raw.count >= 4 ? Int(raw[3]) : nil }
     /// Bytes 5..4, the word the Libre 2 FRAM decryption uses.
     var cryptoWord: Int? { raw.count >= 6 ? Int(raw[5]) << 8 | Int(raw[4]) : nil }
+
+    var regionName: String { regionCode.map(SensorLabels.region) ?? "–" }
+
+    /// One line for the top of the screen, the same for every scan.
+    var summary: String { "\(sensorTypePR67) · \(regionName) · \(generationShort)" }
+
+    var generationShort: String {
+        switch generation {
+        case 2: return "Gen2"
+        case 1: return "Gen1"
+        default: return "other gen"
+        }
+    }
 
     var generationLabel: String {
         switch generation {
