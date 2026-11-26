@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Libre 2 FRAM Map</title>
+<style>
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --ink:#1b1f24; --muted:#667085; --line:#e4e7ec;
+  --known:145 58% 38%; --part:36 92% 46%; --unk:356 72% 52%;
+  --tint:.16; --edge:.42; --shadow:0 1px 2px rgba(16,24,40,.06),0 4px 16px rgba(16,24,40,.06);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --bg:#0f1216; --panel:#171b21; --ink:#e7eaee; --muted:#98a2b3; --line:#2a3038;
+         --known:145 55% 52%; --part:38 92% 58%; --unk:356 80% 64%; --tint:.20; --edge:.5;
+         --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35); color-scheme:dark; }
+}
+:root[data-theme="dark"]{ --bg:#0f1216; --panel:#171b21; --ink:#e7eaee; --muted:#98a2b3; --line:#2a3038;
+         --known:145 55% 52%; --part:38 92% 58%; --unk:356 80% 64%; --tint:.20; --edge:.5;
+         --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35); color-scheme:dark; }
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+header{max-width:1240px;margin:0 auto;padding-block:28px 8px}
+h1{margin:0;font-size:26px;letter-spacing:-.02em}
+.sub{color:var(--muted);margin-top:4px}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.pill{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:12.5px;color:var(--muted)}
+.pill b{color:var(--ink);font-weight:600}
+.summary{max-width:1240px;margin:0 auto;padding-block:12px 4px;display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center}
+.bar{display:flex;height:12px;border-radius:999px;overflow:hidden;background:var(--line)}
+.bar span{display:block;height:100%}
+.legend{display:flex;gap:6px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:6px 10px;cursor:pointer;user-select:none;font-size:13px;color:var(--ink)}
+.chip .sw{width:12px;height:12px;border-radius:4px}
+.chip .n{color:var(--muted);font-variant-numeric:tabular-nums}
+.chip[aria-pressed="false"]{opacity:.45}
+main{max-width:1240px;margin:0 auto;padding-block:12px 40px;display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px;align-items:start}
+@media (max-width:980px){main{grid-template-columns:1fr}.side{position:static!important}}
+@media (max-width:700px){.summary{grid-template-columns:1fr}.row{grid-template-columns:52px repeat(8,minmax(0,1fr));gap:3px}
+  .blk{font-size:10px;padding-left:0}.blk .a{display:none}.cell{border-radius:6px;padding:5px 0 4px}.cell .h{font-size:12px}.cell .o{font-size:8.5px}.map{padding:10px 8px 14px}}
+.map,.side{min-width:0}
+.cell:focus-visible,.chip:focus-visible,button:focus-visible{outline:2px solid hsl(var(--known));outline-offset:2px}
+@media (prefers-reduced-motion: reduce){.cell,.tip{transition:none}.cell.flash{animation:none}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+.map{padding:14px 14px 18px}
+.region{display:flex;align-items:baseline;gap:10px;margin:16px 4px 8px}
+.region:first-child{margin-top:4px}
+.region h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;margin:0;color:var(--muted)}
+.region .r{font-size:12px;color:var(--muted)}
+.row{display:grid;grid-template-columns:92px repeat(8,minmax(0,1fr));gap:4px;margin-bottom:4px;align-items:stretch}
+.blk{font-size:11.5px;color:var(--muted);display:flex;flex-direction:column;justify-content:center;padding-left:4px}
+.blk .a{opacity:.7}
+.cell{--c:var(--unk);position:relative;border-radius:8px;padding:6px 0 5px;text-align:center;cursor:pointer;
+  background:hsl(var(--c)/var(--tint));border:1px solid hsl(var(--c)/var(--edge));transition:transform .08s,box-shadow .12s,opacity .12s}
+.cell.known{--c:var(--known)} .cell.partial{--c:var(--part)} .cell.unknown{--c:var(--unk)}
+.cell .h{font-size:13.5px;font-weight:600;letter-spacing:.02em}
+.cell .o{font-size:9.5px;color:var(--muted);margin-top:1px}
+.cell.rel{box-shadow:0 0 0 2px hsl(var(--c)/.9) inset}
+.cell:hover,.cell.sel{transform:translateY(-1px);box-shadow:0 0 0 2px hsl(var(--c)) ,0 6px 14px hsl(var(--c)/.25)}
+.cell.sel{outline:2px solid var(--ink);outline-offset:1px}
+.cell.dim{opacity:.18}
+.cell.split{background:linear-gradient(135deg,hsl(var(--known)/var(--tint)) 50%,hsl(var(--unk)/var(--tint)) 50%)}
+.side{position:sticky;top:16px;padding:18px}
+.side h3{margin:0 0 2px;font-size:17px}
+.side .tag{display:inline-block;font-size:11.5px;font-weight:600;border-radius:6px;padding:2px 8px;margin:6px 0 10px}
+.tag.known{background:hsl(var(--known)/.16);color:hsl(var(--known))}
+.tag.partial{background:hsl(var(--part)/.18);color:hsl(var(--part))}
+.tag.unknown{background:hsl(var(--unk)/.16);color:hsl(var(--unk))}
+.kv{display:grid;grid-template-columns:110px 1fr;gap:4px 10px;font-size:13px;margin:8px 0 12px}
+.kv div:nth-child(odd){color:var(--muted)}
+.desc{font-size:13.5px;margin:6px 0 12px}
+.bits{display:grid;grid-template-columns:repeat(8,1fr);gap:3px;margin:6px 0 4px}
+.bit{border-radius:6px;padding:6px 0;text-align:center;font-size:13px;border:1px solid hsl(var(--c)/var(--edge));background:hsl(var(--c)/var(--tint))}
+.bit.known{--c:var(--known)} .bit.partial{--c:var(--part)} .bit.unknown{--c:var(--unk)}
+.bit.unused{--c:var(--known);background:repeating-linear-gradient(135deg,hsl(var(--known)/var(--tint)) 0 4px,transparent 4px 8px);border-style:dashed}
+.bitn{display:grid;grid-template-columns:repeat(8,1fr);gap:3px;font-size:10px;color:var(--muted);text-align:center}
+.bitlist{font-size:12.5px;margin:8px 0 0;padding:0;list-style:none}
+.bitlist li{display:flex;gap:8px;align-items:baseline;padding:3px 0;border-top:1px dashed var(--line)}
+.bitlist .sw{flex:none;width:9px;height:9px;border-radius:3px;margin-top:3px}
+.hint{color:var(--muted);font-size:13px}
+.jump{margin:0 0 14px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.jump h4{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.jump input{width:100%;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:7px 10px;font-size:13px;margin-bottom:8px}
+.jl{display:flex;flex-wrap:wrap;gap:6px}
+.jl button{margin:0;background:var(--bg);color:var(--ink);border:1px solid var(--line);font-weight:500;font-size:12.5px;padding:5px 10px;border-radius:999px}
+.jl button:hover{border-color:hsl(var(--known));color:hsl(var(--known))}
+.jl button .at{color:var(--muted);font-family:ui-monospace,Menlo,monospace;font-size:11px;margin-left:4px}
+@keyframes flash{0%,100%{box-shadow:0 0 0 2px hsl(var(--c)) inset}50%{box-shadow:0 0 0 4px hsl(var(--c)),0 0 18px hsl(var(--c)/.6)}}
+.cell.flash{animation:flash .5s ease-in-out 3}
+.tip{position:fixed;pointer-events:none;z-index:10;max-width:320px;background:var(--panel);color:var(--ink);border:1px solid var(--line);
+  border-radius:12px;padding:10px 12px;box-shadow:var(--shadow);font-size:12.5px;opacity:0;transform:translateY(4px);transition:opacity .1s,transform .1s}
+.tip.on{opacity:1;transform:none}
+.tip b{display:block;font-size:13.5px;margin-bottom:2px}
+.tip .t{color:var(--muted)}
+details.load{margin-top:16px;border-top:1px solid var(--line);padding-top:12px}
+details.load summary{cursor:pointer;color:var(--muted);font-size:13px}
+textarea{width:100%;min-height:90px;margin-top:8px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:8px;font:12px ui-monospace,Menlo,monospace}
+button{margin-top:8px;border:0;border-radius:10px;padding:8px 14px;background:hsl(var(--known));color:#fff;font-weight:600;cursor:pointer}
+.err{color:hsl(var(--unk));font-size:12.5px;margin-top:6px}
+footer{max-width:1240px;margin:0 auto;padding-block:0 40px;color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Libre 2 FRAM map</h1>
+  <div class="sub">All 344 bytes of the sensor memory (43 NFC blocks × 8 bytes), decrypted. Hover a byte to see what it holds; click to pin its bits.</div>
+  <div class="meta" id="meta"></div>
+</header>
+<section class="summary">
+  <div class="bar" id="bar" role="img"></div>
+  <div class="legend" id="legend"></div>
+</section>
+<main>
+  <section class="card map" id="map" aria-label="FRAM bytes"></section>
+  <aside class="card side" id="side">
+    <div class="jump"><h4>Jump to a field</h4>
+      <input id="find" type="search" placeholder="Find a field, e.g. wear, age, CRC" aria-label="Find a field">
+      <div class="jl" id="jl"></div></div>
+    <div id="detail"><p class="hint">Hover or click a byte. Same-field bytes light up together.</p></div>
+    <details class="load"><summary>Load another export (JSON or base64)</summary>
+      <textarea id="paste" placeholder="Paste the app's JSON export or its base64 here. It stays in this page."></textarea>
+      <button id="loadBtn">Show this scan</button><div class="err" id="err"></div>
+    </details>
+  </aside>
+</main>
+<footer>Shows LibreTransmitter's public Example2 sample FRAM (no glucose values: the sample has no export records). Pasting your own Libre Export JSON or base64 decodes it right here in your browser; nothing is uploaded. Field meanings follow LoopKit/LibreTransmitter, DiaBLE, this app, and black-box tests plus disassembly of Abbott's algorithm (bytes 334–335, the 12 h grace period); green includes bits shown to be unused (masked off or ignored by Abbott's parser, hatched in the bit view); amber means Abbott's algorithm reads it but its purpose is unknown; red means no public tool decodes it (notes compare three sensors). Not a medical device.</footer>
+<div class="tip" id="tip"></div>
+<script>
+const DATA = {"fram_decrypted_hex": "815a101c030000000000000000000000000000000000000008da0213480500849600430500b896008305005c96008305005c96007505006496006d05005c960072050068d6007d05005c96007705005096006b05004096006105003896006905083696006505003496005105002496004b05003496004e0500509600c30700849600210800d4d500f10600d496006f0500ec9600890500149900950500c89800d505088698007106083298009b06008c5800d00600585800a80600249800b605002898001705000c9800f10400dc97005805003458009d05005897008f0500d496008a05008c96005805003496000e04089e5800c303000098007a0400189700f80400c89700420400409800150400649800710400fc97007104005097002f04083e58008604082a9800c10408c657009e06006097002c0700309700620c010071c63001ca091751140396805a00cda618a31a0000b2c860", "sensor_state": 3, "minutes_since_start": 3170, "app_version": "sample: LibreTransmitter Example2"};
+const STATE = {1:"Not yet started",2:"Starting (warm-up)",3:"Ready",4:"Expired",5:"Shut down",6:"Failure"};
+const $ = s => document.querySelector(s);
+const hex2 = v => v.toString(16).toUpperCase().padStart(2,"0");
+const h = (s,...v) => s.reduce((a,x,i)=>a+x+(i<v.length?v[i]:""),"");
+
+function readBits(buf, byteOff, bitOff, count){ let r=0; for(let i=0;i<count;i++){const t=byteOff*8+bitOff+i; if((buf[t>>3]>>(t&7))&1) r|=(1<<i);} return r; }
+function crc16(msg){ const tab=[]; for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?(c>>>1)^0x8408:c>>>1;tab.push(c)}
+  let crc=0xffff; for(const b of msg) crc=(crc>>>8)^tab[(crc^b)&0xff];
+  let rev=0; for(let i=0;i<16;i++){rev=(rev<<1)|(crc&1);crc>>>=1} return ((rev&0xff)<<8)|(rev>>8); }
+
+/* ---- the map: bit-level knowledge ---- */
+function build(fram, d){
+  const bits = Array.from({length:344*8}, () => null);        // {f, name, kind}
+  const fields = {};
+  function field(id, name, region, desc, value){ fields[id]={id,name,region,desc,value,bytes:new Set()}; return id; }
+  function mark(id, absBit, count, name, kind="known"){ for(let i=0;i<count;i++){ bits[absBit+i]={f:id,name,kind}; fields[id].bytes.add((absBit+i)>>3);} }
+  const B = (byte,bit=0) => byte*8+bit;
+  const crcOk = (a,b) => { const st=(fram[a]<<8)|fram[a+1], cp=crc16(fram.slice(a+2,b)); return [st,cp]; };
+
+  // header
+  let [st,cp] = crcOk(0,24);
+  mark(field("hcrc","Header CRC-16","Header",`CRC-16 of header bytes 2–23, stored high byte first. A match proves the header decrypted correctly.`,`stored 0x${st.toString(16).toUpperCase().padStart(4,"0")} · computed 0x${cp.toString(16).toUpperCase().padStart(4,"0")} ${st===cp?"✓":"✗"}`),B(0),16,"Header CRC");
+  const i1=readBits(fram,2,0,3), i2=readBits(fram,2,3,10);
+  field("cal12","Calibration i1 · i2","Header",`Factory calibration. i2 selects the row of the t1/t2 temperature tables used in the glucose formula. Bits 13–15 are masked off by Abbott's parser and setting them changed nothing: unused.`,`i1 = ${i1} · i2 = ${i2}`);
+  mark("cal12",B(2,0),3,"i1"); mark("cal12",B(2,3),10,"i2"); mark("cal12",B(3,5),3,"unused: masked off by Abbott (ubfx #3, #10), no effect","unused");
+  const fc=fram[6], fa=fram[7]|(fram[8]<<8);
+  mark(field("fail","Failure code · failure age","Header",`DiaBLE reads these when the state is 6 (failure): byte 6 is the error code (0x01 ADC IRQ overflow, 0x05 MMI interrupt, 0x09 patch table error, 0x0A/0x0B low voltage, 0x0C–0x0F FRAM header/body/footer/code CRC error, 0x10 lock table error, 0x13 brownout, 0x28 battery low, 0x34 custom E1/E2 command), bytes 7–8 the minutes after activation it happened. Outside a failure older sensors keep 00 00 00 here and a 2026 one 02 00 00, possibly the first of several 3-byte {code, minutes} entries (see bytes 9–14). Abbott's glucose output ignored these bytes in tests.`,`code 0x${hex2(fc)} · age ${fa} min${fram[4]===6?"":" (sensor isn't in failure)"}`),B(6),8,"error code (in failure)");
+  mark("fail",B(7),16,"failure age, minutes (in failure)");
+  mark(field("state","Sensor state","Header",`1 not started · 2 warm-up · 3 ready · 4 expired · 5 shut down · 6 failure (LibreTransmitter's SensorState).`,`${fram[4]} = ${STATE[fram[4]]||"unknown"}`),B(4),8,"state");
+
+  // body
+  [st,cp] = crcOk(24,320);
+  mark(field("bcrc","Body CRC-16","Body",`CRC-16 of body bytes 26–319. The body changes every minute, so a read that overlaps an update can fail this one alone.`,`stored 0x${st.toString(16).toUpperCase().padStart(4,"0")} · computed 0x${cp.toString(16).toUpperCase().padStart(4,"0")} ${st===cp?"✓":"✗"}`),B(24),16,"Body CRC");
+  const nt=fram[26]%16, nh=fram[27]%32;
+  mark(field("nt","Next trend slot","Body",`Index of the trend slot the sensor writes next (0–15). The newest minute is in the slot before it.`,`${fram[26]}`),B(26),8,"next trend");
+  mark(field("nh","Next history slot","Body",`Index of the history slot the sensor writes next (0–31). The newest 15-minute value is in the slot before it.`,`${fram[27]}`),B(27),8,"next history");
+  const rec = (base, id, kind, k, ago, r) => {
+    const g=readBits(fram,base,0,14), e=readBits(fram,base,14,12), t=readBits(fram,base,26,12)<<2, a=readBits(fram,base,38,9)<<2, s=readBits(fram,base,47,1);
+    const gl = r && r.glucose_mgdl!=null ? `${r.glucose_mgdl.toFixed(0)} mg/dL (${(r.glucose_mgdl/18.0182).toFixed(1)} mmol/L)` : "no value";
+    field(id, `${kind} record · slot ${k}`, "Body",
+      `6 bytes, all 48 bits decoded (LibreTransmitter's Measurement): raw glucose (14 bits), 12 error bits (LibreTransmitter's MeasurementError; DiaBLE splits them into a 9-bit quality, 2 quality flags and hasError), raw temperature (12, ×4), temperature adjustment (9, ×4) and its sign.`,
+      `${ago} · ${gl} · raw ${g} · temp raw ${t}${r&&r.temperature_c!=null?` (${r.temperature_c.toFixed(1)} °C)`:""} · adj ${s?-a:a}${e?` · flags 0x${e.toString(16).toUpperCase()}`:""}`);
+    mark(id,B(base,0),14,"raw glucose"); mark(id,B(base,14),9,"error flags (LT) · quality (DiaBLE)"); mark(id,B(base,23),2,"error flags (LT) · quality flags (DiaBLE)"); mark(id,B(base,25),1,"0x800 thermistor (LT) · hasError (DiaBLE)"); mark(id,B(base,26),12,"raw temperature");
+    mark(id,B(base,38),9,"temp. adjustment"); mark(id,B(base,47),1,"adjustment sign");
+  };
+  for(let k=0;k<16;k++){ const b=((nt-1-k)%16+16)%16; rec(28+6*k,"t"+k,"Trend",k, b===0?"newest minute":`${b} min before scan`, (d.trend_records||[])[b]); }
+  for(let k=0;k<32;k++){ const b=((nh-1-k)%32+32)%32; const r=(d.history_records||[])[b]; rec(124+6*k,"h"+k,"History",k, r?`${-r.minute} min before scan`:`${b*15} min (approx.)`, r); }
+  const age=fram[316]|(fram[317]<<8);
+  mark(field("inits","Initializations","Body",`How many times the sensor was initialized (DiaBLE's \`initializations\`). 1 on the two older samples, 0 on a 2026 sensor.`,`${fram[318]}`),B(318),8,"initializations");
+  mark(field("age","Minutes since start","Body",`Sensor age in minutes, little-endian. Ages, start and end dates come from this.`,`${age} min = ${Math.floor(age/1440)}d ${Math.floor(age%1440/60)}h ${age%60}m`),B(316),16,"age");
+
+  // footer
+  [st,cp] = crcOk(320,344);
+  mark(field("fcrc","Footer CRC-16","Footer",`CRC-16 of footer bytes 322–343.`,`stored 0x${st.toString(16).toUpperCase().padStart(4,"0")} · computed 0x${cp.toString(16).toUpperCase().padStart(4,"0")} ${st===cp?"✓":"✗"}`),B(320),16,"Footer CRC");
+  mark(field("f2","Patch info byte 2 (copy)","Footer",`A copy of patch info byte 2 (family and security version). DiaBLE notes footer[2..3] = patchInfo[2...3]; true on all three sensors compared.`,`0x${hex2(fram[322])}`),B(322),8,"= patch info byte 2");
+  mark(field("region","Region (copy of patch info byte 3)","Footer",`A copy of patch info byte 3, read as the region (1 Europe, 2 US, 4 Australia/Canada, 8 rest of world) by DiaBLE and this app.`,`0x${hex2(fram[323])}`),B(323),8,"region");
+  mark(field("rawmin","Raw minimum threshold","Footer",`Factory value tied to the SENSOR_SIGNAL_LOW error (DiaBLE; 150 on a Libre 1). 150 on all three Libre 2 samples. Abbott's Libre 2 algorithm doesn't read it: changing it didn't change the output.`,`${fram[330]}`),B(330),8,"raw minimum");
+  mark(field("adcdelta","Maximum ADC delta","Footer",`Factory value tied to the FILTER_DELTA error (DiaBLE; 90 on a Libre 1). 90 on all three Libre 2 samples. Abbott's Libre 2 algorithm doesn't read it: changing it didn't change the output.`,`${fram[332]}`),B(332),8,"max ADC delta");
+  const wear=fram[326]|(fram[327]<<8);
+  mark(field("abb324","Per-sensor value (read by Abbott)","Footer",`Abbott's footer parser copies these two bytes, as a 16-bit value, into its sensor record. Changing them (0000, FFFF) didn't change the glucose output, so what it's for is unknown. Differs on every sensor: 2486 and 2506 on two older sensors of one batch, 4830 on a 2026 one. Not related to wear time, age or patch bytes 4–5.`,`${fram[324]|(fram[325]<<8)}`),B(324),16,"read by Abbott, use unknown","read");
+  mark(field("wear","Maximum wear time","Footer",`Minutes the sensor runs before it ends: footer bytes 6–7, little-endian (LibreTransmitter's maxMinutesWearTime). Abbott's algorithm keeps reading until age > wear time + 720 min, i.e. a 12-hour grace period. Not exactly the nominal life: two 14-day Libre 2 samples store 20 719 and 20 759 min (14 days + 9–10 h), apparently the nominal life plus some extra hours.`,`${wear} min = ${Math.floor(wear/1440)}d ${Math.floor(wear%1440/60)}h ${wear%60}m`),B(326),16,"wear time");
+  mark(field("avgdelta","Average-delta limit","Footer",`Low 5 bits × 16: the limit on the average absolute step between consecutive raw readings (Abbott's algorithm: sums |a − b|, divides by the count, compares with value × 16), i.e. the AVG_DELTA_EXCEEDED check. 0 stops the current reading. Found by disassembly and confirmed on the in-context oracle; bits 5–7 are masked off and unused. 13 (= 208) on all three sensors compared.`,`${fram[334]&31} × 16 = ${(fram[334]&31)*16}`),B(334),5,"average-delta limit ÷ 16"); mark("avgdelta",B(334,5),3,"unused: masked off (& 0x1F)","unused");
+  mark(field("peakdelta","Peak-delta limit","Footer",`Low 6 bits × 16: the limit on one absolute step |a − b| between consecutive raw readings, i.e. the PEAK_DELTA_EXCEEDED check. 0 stops the current reading. Found by disassembly and confirmed on the in-context oracle; bits 6–7 are masked off and unused. 38 (= 608) on all three sensors compared.`,`${fram[335]&63} × 16 = ${(fram[335]&63)*16}`),B(335),6,"peak-delta limit ÷ 16"); mark("peakdelta",B(335,6),2,"unused: masked off (& 0x3F)","unused");
+  const i3=readBits(fram,336,0,8), i4=readBits(fram,336,8,14), neg=readBits(fram,336,33,1), i5=readBits(fram,336,40,12)<<2, i6=readBits(fram,336,52,12)<<2;
+  field("cal","Calibration i3 · i4 · i5 · i6","Footer",`Factory calibration (LibreTransmitter's calibrationData). i3/i4 scale raw glucose, i6 feeds the thermistor formula. Running Abbott's calibration parser in an emulator and flipping each bit: only bits 0–21, 33 and 52–63 change its output; it never reads bytes 339 and 341. So i5 and the bits in between are unused.`,`i3 = ${neg?-i3:i3} · i4 = ${i4} · i5 = ${i5} · i6 = ${i6}`);
+  mark("cal",B(336,0),8,"i3"); mark("cal",B(336,8),14,"i4"); mark("cal",B(336,33),1,"i3 sign"); mark("cal",B(336,40),12,"i5 (ignored by Abbott)"); mark("cal",B(336,52),12,"i6");
+  mark("cal",B(336,22),11,"unused: no effect on Abbott's parser","unused"); mark("cal",B(336,34),6,"unused: no effect on Abbott's parser","unused");
+
+  // per byte
+  const bytes = [];
+  for(let i=0;i<344;i++){
+    const bb = bits.slice(i*8,i*8+8);
+    const known = bb.filter(x=>x&&(x.kind==="known"||x.kind==="unused")).length;
+    const status = known===8 ? "known" : (bb.some(Boolean) ? "partial" : "unknown");
+    const fids = [...new Set(bb.filter(Boolean).map(x=>x.f))];
+    const region = i<24?"Header":i<320?"Body":"Footer";
+    bytes.push({i, v:fram[i], status, bits:bb, fids, region});
+  }
+  return {bytes, fields};
+}
+
+/* ---- rendering ---- */
+let M, pinned=null, filter={known:true,partial:true,unknown:true};
+const COLORS = {known:"hsl(var(--known))",unused:"hsl(var(--known)/.45)",partial:"hsl(var(--part))",unknown:"hsl(var(--unk))"};
+const LABEL = {known:"Known",partial:"Read, meaning unknown",unknown:"Unknown"};
+
+function render(d){
+  const fram = hexToBytes(d.fram_decrypted_hex);
+  if(fram.length!==344) throw new Error("This export has no 344-byte decrypted FRAM.");
+  M = build(fram, d);
+  const n = {known:0,partial:0,unknown:0}; M.bytes.forEach(b=>n[b.status]++);
+  const age = d.minutes_since_start;
+  $("#meta").innerHTML = [
+    d.scanned_at && `Scanned <b>${new Date(d.scanned_at).toLocaleString()}</b>`,
+    d.sensor_state && `State <b>${STATE[d.sensor_state]||d.sensor_state}</b>`,
+    age>=0 && `Age <b>${Math.floor(age/1440)}d ${Math.floor(age%1440/60)}h</b>`,
+    d.app_version && `Libre Export <b>${d.app_version}</b>`,
+    `Bits known <b>${M.bytes.reduce((a,b)=>a+b.bits.filter(x=>x&&(x.kind==="known"||x.kind==="unused")).length,0)} / 2752</b>`
+  ].filter(Boolean).map(x=>`<span class="pill">${x}</span>`).join("");
+  $("#bar").innerHTML = ["known","partial","unknown"].map(k=>`<span style="width:${n[k]/344*100}%;background:${COLORS[k]}" title="${LABEL[k]}: ${n[k]} bytes"></span>`).join("");
+  $("#bar").setAttribute("aria-label",`${n.known} bytes known, ${n.partial} partly known, ${n.unknown} unknown, of 344`);
+  $("#legend").innerHTML = ["known","partial","unknown"].map(k=>
+    `<span class="chip" role="button" tabindex="0" aria-pressed="${filter[k]}" data-k="${k}"><span class="sw" style="background:${COLORS[k]}"></span>${LABEL[k]} <span class="n">${n[k]}</span></span>`).join("");
+  document.querySelectorAll(".chip").forEach(c=>{
+    const t=()=>{filter[c.dataset.k]=!filter[c.dataset.k]; c.setAttribute("aria-pressed",filter[c.dataset.k]); applyFilter();};
+    c.onclick=t; c.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();t();}};
+  });
+  const regions=[["Header","bytes 0–23 · blocks 0–2",0,3],["Body","bytes 24–319 · blocks 3–39 · trend and history ring buffers",3,40],["Footer","bytes 320–343 · blocks 40–42",40,43]];
+  let html="";
+  for(const [name,range,b0,b1] of regions){
+    html+=`<div class="region"><h2>${name}</h2><span class="r">${range}</span></div>`;
+    for(let blk=b0;blk<b1;blk++){
+      html+=`<div class="row"><div class="blk mono"><span>Block ${String(blk).padStart(2,"0")}</span><span class="a">0x${(blk*8).toString(16).toUpperCase().padStart(3,"0")}</span></div>`;
+      for(let j=0;j<8;j++){ const b=M.bytes[blk*8+j];
+        html+=`<div class="cell ${b.status}" data-i="${b.i}" tabindex="0" aria-label="Byte ${b.i}, 0x${hex2(b.v)}, ${LABEL[b.status]}"><div class="h mono">${hex2(b.v)}</div><div class="o mono">${b.i}</div></div>`; }
+      html+=`</div>`;
+    }
+  }
+  $("#map").innerHTML=html;
+  const cells=[...document.querySelectorAll(".cell")];
+  cells.forEach(c=>{
+    const i=+c.dataset.i;
+    c.onmouseenter=e=>{ relate(i); tip(i,e); if(pinned===null) detail(i); };
+    c.onmousemove=e=>tip(i,e);
+    c.onmouseleave=()=>{ relate(pinned); $("#tip").classList.remove("on"); if(pinned!==null) detail(pinned); };
+    c.onclick=()=>{ if(innerWidth<=980) setTimeout(()=>$("#detail").scrollIntoView({behavior:"smooth",block:"start"}),0); pinned = pinned===i?null:i; cells.forEach(x=>x.classList.toggle("sel",+x.dataset.i===pinned)); detail(pinned??i); relate(pinned??i); };
+    c.onfocus=()=>{ relate(i); detail(i); };
+    c.onkeydown=e=>{ const k={ArrowRight:1,ArrowLeft:-1,ArrowDown:8,ArrowUp:-8}[e.key]; if(k){e.preventDefault(); const t=cells[Math.min(343,Math.max(0,i+k))]; t.focus();} if(e.key==="Enter")c.click(); };
+  });
+  pinned=null; applyFilter(); buildJump();
+  $("#detail").innerHTML=`<p class="hint">Hover or click a byte. Same-field bytes light up together.</p>`;
+}
+
+function relate(i){
+  document.querySelectorAll(".cell.rel").forEach(c=>c.classList.remove("rel"));
+  if(i==null) return;
+  const f=M.bytes[i].fids; if(!f.length) return;
+  M.bytes.forEach(b=>{ if(b.fids.some(x=>f.includes(x))) document.querySelector(`.cell[data-i="${b.i}"]`).classList.add("rel"); });
+}
+function applyFilter(){ document.querySelectorAll(".cell").forEach(c=>c.classList.toggle("dim",!filter[M.bytes[+c.dataset.i].status])); }
+
+const NOTES = {
+  3:"Top 3 bits after i2: 000 on two older sensors, 011 on a 2026 one. Maybe part of a wider calibration field.",
+  5:"00 on all three sensors compared.",
+  9:"02/03/04 at bytes 6, 9, 12 on a 2026 sensor look like 3-byte {code, minutes} entries continuing bytes 6–8 (here 03 00 00). Zero on older sensors. Hypothesis.",
+  10:"Part of the possible entry at bytes 9–11. Zero on all three sensors.", 11:"Part of the possible entry at bytes 9–11. Zero on all three sensors.",
+  12:"Possible third entry {code 04, minutes 0x0008} on a 2026 sensor (bytes 12–14); zero on older sensors. Hypothesis.",
+  13:"Possible third entry's minutes, low byte: 08 on a 2026 sensor, 00 on older ones.", 14:"Possible third entry's minutes, high byte. Zero on all three.",
+  319:"00 on all three sensors compared.",
+  328:"0x14 (20) on all three sensors. Abbott's footer parser doesn't read it, and changing it didn't change the output.",
+  329:"03 on two older sensors, 00 on a 2026 one. Not read by Abbott's footer parser; changing it didn't change the output.",
+  331:"0x80 on all three sensors. Not read by Abbott's footer parser; changing it didn't change the output.",
+  333:"00 on all three sensors. Not read by Abbott's footer parser; changing it didn't change the output.",
+};
+function summary(b){
+  if(!b.fids.length) return {name:`Unknown byte`, desc:(NOTES[b.i]?NOTES[b.i]+" ":"")+`Not read by LibreTransmitter, DiaBLE or this app; its meaning isn't publicly known.`, value:null};
+  const f=M.fields[b.fids[0]];
+  return {name:f.name, desc:f.desc, value:f.value};
+}
+function tip(i,e){
+  const b=M.bytes[i], s=summary(b), t=$("#tip");
+  t.innerHTML=`<b>${s.name}</b><span class="mono">Byte ${i} · block ${i>>3} · 0x${hex2(b.v)}</span>${s.value?`<div style="margin-top:4px">${s.value}</div>`:""}<div class="t" style="margin-top:4px">${LABEL[b.status]}${b.status==="partial"?" · click for the bits":""}</div>`;
+  const x=Math.min(e.clientX+16, innerWidth-340), y=Math.min(e.clientY+16, innerHeight-t.offsetHeight-10);
+  t.style.left=x+"px"; t.style.top=y+"px"; t.classList.add("on");
+}
+function detail(i){
+  if(i==null) return;
+  const b=M.bytes[i], s=summary(b);
+  const bitCells=[], names=[];
+  for(let k=7;k>=0;k--){ const x=b.bits[k], v=(b.v>>k)&1, cls=!x?"unknown":x.kind==="known"?"known":x.kind==="unused"?"unused":"partial";
+    bitCells.push(`<div class="bit mono ${cls}" title="bit ${k}: ${x?x.name:"unknown"}">${v}</div>`); }
+  const groups=[]; for(let k=0;k<8;k++){ const x=b.bits[k], nm=x?x.name:"unknown", cls=!x?"unknown":x.kind==="known"?"known":x.kind==="unused"?"unused":"partial";
+    const g=groups[groups.length-1]; if(g&&g.nm===nm&&g.cls===cls) g.to=k; else groups.push({nm,cls,from:k,to:k}); }
+  $("#detail").innerHTML = h`
+    <h3>${s.name}</h3><span class="tag ${b.status}">${LABEL[b.status]}</span>
+    <div class="kv mono"><div>Offset</div><div>${i} (0x${i.toString(16).toUpperCase().padStart(3,"0")})</div>
+      <div>Block</div><div>${i>>3}, byte ${i&7}</div><div>Region</div><div>${b.region}</div>
+      <div>Value</div><div>0x${hex2(b.v)} · ${b.v} · ${b.v.toString(2).padStart(8,"0")}</div></div>
+    ${s.value?`<div class="kv"><div>Decoded</div><div>${s.value}</div></div>`:""}
+    <p class="desc">${s.desc}</p>
+    <div class="bitn mono">${[7,6,5,4,3,2,1,0].map(k=>`<div>b${k}</div>`).join("")}</div>
+    <div class="bits">${bitCells.join("")}</div>
+    <ul class="bitlist">${groups.reverse().map(g=>`<li><span class="sw" style="background:${COLORS[g.cls]}"></span><span class="mono">${g.from===g.to?`bit ${g.from}`:`bits ${g.from}–${g.to}`}</span><span>${g.nm}</span></li>`).join("")}</ul>`;
+}
+
+/* ---- jump list: the fields people look for, plus every other named field via search ---- */
+const FEATURED = ["wear","age","state","nt","nh","avgdelta","peakdelta","inits","fail","hcrc","bcrc","fcrc","cal12","cal","region","f2","rawmin","adcdelta"];
+function rangeOf(f){ const b=[...f.bytes].sort((a,c)=>a-c); return b.length>1?`${b[0]}–${b[b.length-1]}`:`${b[0]}`; }
+function buildJump(){
+  const all = Object.values(M.fields);
+  const nt = M.bytes[26].v%16, nh = M.bytes[27].v%32;
+  const extra = [{f:M.fields["t"+((nt+15)%16)], label:"Newest trend record"}, {f:M.fields["h"+((nh+31)%32)], label:"Newest history record"}];
+  const draw = q => {
+    q = (q||"").trim().toLowerCase();
+    let items = q ? all.filter(f => (f.name+" "+f.id+" "+f.desc).toLowerCase().includes(q)).map(f=>({f,label:f.name}))
+                  : FEATURED.map(id=>M.fields[id]).filter(Boolean).map(f=>({f,label:f.name})).concat(extra);
+    $("#jl").innerHTML = items.slice(0,40).map(x=>`<button data-id="${x.f.id}" title="${x.f.region}, bytes ${rangeOf(x.f)}">${x.label}<span class="at">${rangeOf(x.f)}</span></button>`).join("")
+      || `<span class="hint">No field matches “${q}”.</span>`;
+    document.querySelectorAll("#jl button").forEach(b=>b.onclick=()=>jumpTo(b.dataset.id));
+  };
+  $("#find").oninput = e => draw(e.target.value);
+  $("#find").onkeydown = e => { if(e.key==="Enter"){ const b=document.querySelector("#jl button"); if(b) b.click(); } };
+  draw("");
+}
+function jumpTo(id){
+  const f = M.fields[id]; if(!f) return;
+  const first = Math.min(...f.bytes);
+  filter = {known:true,partial:true,unknown:true};
+  document.querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed","true")); applyFilter();
+  pinned = first;
+  document.querySelectorAll(".cell").forEach(c=>c.classList.toggle("sel",+c.dataset.i===first));
+  relate(first); detail(first);
+  const cells = [...f.bytes].map(i=>document.querySelector(`.cell[data-i="${i}"]`));
+  cells[0].scrollIntoView({behavior:"smooth",block:"center"});
+  cells.forEach(c=>{ c.classList.remove("flash"); void c.offsetWidth; c.classList.add("flash"); });
+  history.replaceState(null,"","#"+id);
+}
+
+function hexToBytes(s){ s=(s||"").replace(/[^0-9a-f]/gi,""); const a=new Uint8Array(s.length/2|0); for(let i=0;i<a.length;i++)a[i]=parseInt(s.substr(i*2,2),16); return [...a]; }
+$("#loadBtn").onclick=()=>{
+  const raw=$("#paste").value.trim(); $("#err").textContent="";
+  try{ let d; try{d=JSON.parse(raw)}catch{ d=JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(raw.replace(/\s/g,"")),c=>c.charCodeAt(0)))) }
+       render(d); window.scrollTo({top:0,behavior:"smooth"}); }
+  catch(e){ $("#err").textContent="Couldn't read that: "+e.message; }
+};
+if(DATA){ render(DATA); const id=location.hash.slice(1); if(id) setTimeout(()=>jumpTo(id),50); } else $("#map").innerHTML=`<p class="hint" style="padding:20px">No scan loaded. Paste an export on the right.</p>`;
+</script>
+
+</body>
+</html>

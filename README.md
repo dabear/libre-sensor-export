@@ -157,6 +157,13 @@ Then tap **Copy report** (Overview, at the bottom) and paste it into the PR: it
 has all of the above, plus the iOS version, iPhone model and scan time, without
 the sensor's identity.
 
+## FRAM map
+[An interactive map of all 344 bytes](https://dabear.github.io/libre-sensor-export/fram-map.html)
+of the Libre 2 memory: what each byte holds, which bits are known, unused or still
+unknown, and where the meanings come from (LibreTransmitter, DiaBLE, and tests
+against Abbott's algorithm). It shows LibreTransmitter's public Example2 sample; you
+can paste your own export into it, and that stays in your browser.
+
 ## Export format (`libre2-fram-export-v1`)
 Base64 of a JSON object: `uid`, `patch_info`, `generation`, `fram_encrypted_hex`,
 `fram_decrypted_hex`, `minutes_since_start`, `calibration{i1..i6}`, and
