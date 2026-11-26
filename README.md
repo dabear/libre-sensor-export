@@ -158,7 +158,7 @@ has all of the above, plus the iOS version, iPhone model and scan time, without
 the sensor's identity.
 
 ## FRAM map
-[An interactive map of all 344 bytes](https://dabear.github.io/libre-sensor-export/fram-map.html)
+[An interactive map of all 344 bytes](https://code.bjorninge.no/libre-sensor-export/fram-map.html)
 of the Libre 2 memory: what each byte holds, which bits are known, unused or still
 unknown, and where the meanings come from (LibreTransmitter, DiaBLE, and tests
 against Abbott's algorithm). It shows LibreTransmitter's public Example2 sample; you
