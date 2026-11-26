@@ -8,6 +8,8 @@ struct ScanResult {
     let uid: [UInt8]
     let patchInfo: [UInt8]
     let framEncrypted: [UInt8]   // 344 bytes, as read (Gen1 Libre 2 = encrypted)
+    let tag: TagInfo
+    let scannedAt: Date
 }
 
 final class NFCReader: NSObject, ObservableObject, NFCTagReaderSessionDelegate {
@@ -55,13 +57,16 @@ final class NFCReader: NSObject, ObservableObject, NFCTagReaderSessionDelegate {
 
                 if Libre2FRAM.securityGeneration(patchInfo) == 2 {
                     // Gen2: report identity, but the FRAM read needs the authenticated flow.
-                    DispatchQueue.main.async {
-                        self.scanning = false
-                        self.result = ScanResult(uid: uid, patchInfo: patchInfo, framEncrypted: [])
-                        self.status = "Gen2 sensor — captured UID + patch info (FRAM needs authenticated read)."
+                    self.readTagInfo(tag) { info in
+                        DispatchQueue.main.async {
+                            self.scanning = false
+                            self.result = ScanResult(uid: uid, patchInfo: patchInfo, framEncrypted: [],
+                                                     tag: info, scannedAt: Date())
+                            self.status = "Gen2 sensor — captured UID + patch info (FRAM needs authenticated read)."
+                        }
+                        session.alertMessage = "Done (Gen2 identity captured)."
+                        session.invalidate()
                     }
-                    session.alertMessage = "Done (Gen2 identity captured)."
-                    session.invalidate()
                     return
                 }
 
@@ -69,15 +74,39 @@ final class NFCReader: NSObject, ObservableObject, NFCTagReaderSessionDelegate {
                     guard let fram, fram.count == 344 else {
                         session.invalidate(errorMessage: "FRAM read incomplete."); return
                     }
-                    DispatchQueue.main.async {
-                        self.scanning = false
-                        self.result = ScanResult(uid: uid, patchInfo: patchInfo, framEncrypted: fram)
-                        self.status = "Scan complete."
+                    // Scan time = when the FRAM was read, so ages and dates line up with it.
+                    let scannedAt = Date()
+                    self.readTagInfo(tag) { info in
+                        DispatchQueue.main.async {
+                            self.scanning = false
+                            self.result = ScanResult(uid: uid, patchInfo: patchInfo, framEncrypted: fram,
+                                                     tag: info, scannedAt: scannedAt)
+                            self.status = "Scan complete."
+                        }
+                        session.alertMessage = "Sensor read."
+                        session.invalidate()
                     }
-                    session.alertMessage = "Sensor read."
-                    session.invalidate()
                 }
             }
+        }
+    }
+
+    /// Tag manufacturer and serial, plus Get System Info. Done last and best effort: a sensor
+    /// that rejects the command still gives a complete scan, with the error shown instead.
+    private func readTagInfo(_ tag: NFCISO15693Tag, completion: @escaping (TagInfo) -> Void) {
+        var info = TagInfo(icManufacturerCode: tag.icManufacturerCode,
+                           icSerialNumber: [UInt8](tag.icSerialNumber))
+        tag.getSystemInfo(requestFlags: .highDataRate) { result in
+            switch result {
+            case .success(let s):
+                info.systemInfo = TagSystemInfo(dsfid: s.dataStorageFormatIdentifier,
+                                                afi: s.applicationFamilyIdentifier,
+                                                blockSize: s.blockSize, totalBlocks: s.totalBlocks,
+                                                icReference: s.icReference)
+            case .failure(let error):
+                info.systemInfoError = error.localizedDescription
+            }
+            completion(info)
         }
     }
 

@@ -7,19 +7,34 @@ struct Record {
     let rawGlucose: Int
     let rawTemperature: Int
     let rawTemperatureAdjustment: Int
+    var temperature: Double?    // °C via the thermistor formula
     var glucose: Double?        // mg/dL via the calibration
+}
+
+/// One FRAM region's CRC: the two stored bytes and the CRC of the rest.
+struct CRCCheck {
+    let stored: UInt16, computed: UInt16
+    var ok: Bool { stored == computed }
 }
 
 struct ParsedSensor {
     let serial: String
     let generation: Int         // 1 or 2
+    let state: Int              // header byte 4 (SensorLabels.state)
     let minutesSinceStart: Int
     let maxMinutesWear: Int
-    let headerCRC: Bool, bodyCRC: Bool, footerCRC: Bool
+    let nextTrendBlock: Int     // body byte 2
+    let nextHistoryBlock: Int   // body byte 3
+    let regionByte: Int         // FRAM byte 323
+    let headerCRC: CRCCheck, bodyCRC: CRCCheck, footerCRC: CRCCheck
     let i1: Int, i2: Int, i3: Double, i4: Double, i5: Double, i6: Double
-    let trend: [Record]         // 16 points, newest first
-    var crcOK: Bool { headerCRC && bodyCRC && footerCRC }
-    var ageHuman: String { "\(minutesSinceStart / 1440)d \((minutesSinceStart % 1440) / 60)h \(minutesSinceStart % 60)m" }
+    let trend: [Record]         // 16 points, 1 min apart, newest first
+    let history: [Record]       // 32 points, 15 min apart, newest first
+    var crcOK: Bool { headerCRC.ok && bodyCRC.ok && footerCRC.ok }
+    var minutesLeft: Int { max(maxMinutesWear - minutesSinceStart, 0) }
+    var ageHuman: String { Self.human(minutesSinceStart) }
+    var leftHuman: String { Self.human(minutesLeft) }
+    static func human(_ m: Int) -> String { "\(m / 1440)d \((m % 1440) / 60)h \(m % 60)m" }
 }
 
 enum SensorParse {
@@ -62,34 +77,55 @@ enum SensorParse {
         let i6 = Double(Libre2FRAM.readBits(fram, 0x150, 0x34, 0xc) << 2)
 
         let minutes = Int(body[293]) << 8 + Int(body[292])
-        let nextTrend = Int(body[2])
+        // modulo: a corrupt FRAM must not index outside the ring buffers
+        let nextTrend = Int(body[2]) % 16
+        let nextHistory = Int(body[3]) % 32
         let maxWear = Int(footer[7]) << 8 + Int(footer[6])
+        let cal3 = negI3 ? -i3 : i3
 
-        var trend = [Record]()
-        for blockIndex in 0...15 {
-            var index = 4 + (nextTrend - 1 - blockIndex) * 6
-            if index < 4 { index += 96 }
-            let b = Array(body[index..<index + 6])
+        func record(_ b: [UInt8], minuteOffset: Int) -> Record {
             let rawGlucose = Libre2FRAM.readBits(b, 0, 0, 0xe)
             let rawTemp = Libre2FRAM.readBits(b, 0, 0x1a, 0xc) << 2
             let adj = Libre2FRAM.readBits(b, 0, 0x26, 0x9) << 2
             let rawAdj = (Libre2FRAM.readBits(b, 0, 0x2f, 1) != 0) ? -adj : adj
+            let t = temperature(rawTemp, rawAdj, i6)
             var g: Double?
-            if rawGlucose > 0, let t = temperature(rawTemp, rawAdj, i6) {
-                g = glucose(rawGlucose: rawGlucose, i2: i2, i3: negI3 ? -i3 : i3, i4: i4, temp: t)
-            }
-            trend.append(Record(minuteOffset: blockIndex, rawGlucose: rawGlucose,
-                                rawTemperature: rawTemp, rawTemperatureAdjustment: rawAdj, glucose: g))
+            if rawGlucose > 0, let t { g = glucose(rawGlucose: rawGlucose, i2: i2, i3: cal3, i4: i4, temp: t) }
+            return Record(minuteOffset: minuteOffset, rawGlucose: rawGlucose, rawTemperature: rawTemp,
+                          rawTemperatureAdjustment: rawAdj, temperature: t, glucose: g)
+        }
+
+        // Trend: body 4..<100, 16 x 6 bytes, one per minute.
+        var trend = [Record]()
+        for blockIndex in 0...15 {
+            var index = 4 + (nextTrend - 1 - blockIndex) * 6
+            if index < 4 { index += 96 }
+            trend.append(record(Array(body[index..<index + 6]), minuteOffset: blockIndex))
+        }
+
+        // History: body 100..<292, 32 x 6 bytes, one per 15 min. Age of the newest as
+        // LibreTransmitter's dateOfMostRecentHistoryValue (written 3 min after each quarter).
+        let delay = (minutes - 3) % 15 + 3
+        let inSync = ((minutes - 3) / 15) % 32 == nextHistory
+        let newestAgo = inSync ? delay : delay - 15
+        var history = [Record]()
+        for blockIndex in 0..<32 {
+            var index = 100 + (nextHistory - 1 - blockIndex) * 6
+            if index < 100 { index += 192 }
+            history.append(record(Array(body[index..<index + 6]), minuteOffset: newestAgo + 15 * blockIndex))
         }
 
         return ParsedSensor(
             serial: serialNumber(uid: uid, patchInfo: patchInfo),
             generation: Libre2FRAM.securityGeneration(patchInfo),
+            state: Int(fram[4]),
             minutesSinceStart: minutes, maxMinutesWear: maxWear,
-            headerCRC: Libre2FRAM.crcOK(fram[0..<24]),
-            bodyCRC: Libre2FRAM.crcOK(fram[24..<320]),
-            footerCRC: Libre2FRAM.crcOK(fram[320..<344]),
-            i1: i1, i2: i2, i3: negI3 ? -i3 : i3, i4: i4, i5: i5, i6: i6, trend: trend)
+            nextTrendBlock: nextTrend, nextHistoryBlock: nextHistory,
+            regionByte: Int(fram[323]),
+            headerCRC: Libre2FRAM.crcCheck(fram[0..<24]),
+            bodyCRC: Libre2FRAM.crcCheck(fram[24..<320]),
+            footerCRC: Libre2FRAM.crcCheck(fram[320..<344]),
+            i1: i1, i2: i2, i3: cal3, i4: i4, i5: i5, i6: i6, trend: trend, history: history)
     }
 
     // Libre serial from UID + sensor family. Exact port of LibreTransmitter SensorSerialNumber.

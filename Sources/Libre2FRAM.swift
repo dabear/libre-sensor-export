@@ -79,9 +79,9 @@ enum Libre2FRAM {
         for _ in 0..<16 { rev = (rev << 1) | (crc & 1); crc >>= 1 }
         return rev.byteSwapped
     }
-    static func crcOK(_ region: ArraySlice<UInt8>) -> Bool {
+    static func crcCheck(_ region: ArraySlice<UInt8>) -> CRCCheck {
         let b = Array(region)
-        return crc16(Array(b.dropFirst(2))) == (UInt16(b[0]) << 8 | UInt16(b[1]))
+        return CRCCheck(stored: UInt16(b[0]) << 8 | UInt16(b[1]), computed: crc16(Array(b.dropFirst(2))))
     }
 
     // MARK: bit reader

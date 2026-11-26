@@ -1,0 +1,4 @@
+// Copy to Local.xcconfig (ignored by git) and fill in. Overrides Config.xcconfig.
+DEVELOPMENT_TEAM = AB12CD34EF
+// Optional: your own bundle ID. Leave out to use org.libresensorexport.<team ID>.
+// LIBRE_EXPORT_BUNDLE_ID = com.example.libresensorexport

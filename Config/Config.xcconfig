@@ -1,0 +1,10 @@
+// Signing settings. Don't edit this file: put your own values in Local.xcconfig
+// (not committed; copy Config/Local.xcconfig.example), or let scripts/install.sh pass them.
+
+// Your Apple Developer team ID (10 characters, e.g. AB12CD34EF).
+DEVELOPMENT_TEAM =
+
+// Must be unique to you. The team ID makes it so without any edits.
+LIBRE_EXPORT_BUNDLE_ID = org.libresensorexport.$(DEVELOPMENT_TEAM)
+
+#include? "Local.xcconfig"

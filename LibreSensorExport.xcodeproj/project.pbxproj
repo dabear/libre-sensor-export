@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		021ABC86B011408C94358A9D /* SensorMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = 707DECC4316EE56DB859582A /* SensorMetadata.swift */; };
 		459C4347197662DD1ABC9EE4 /* Libre2FRAM.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AC8E29365578380136B3A2D /* Libre2FRAM.swift */; };
 		5281804A2EC9A5D47D1C7F66 /* SensorExportApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C585FD214D3C3182DDC2683 /* SensorExportApp.swift */; };
 		AFD049CF302AA6788083FADD /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17AAC495FA295892A6C117A /* ContentView.swift */; };
@@ -17,15 +18,27 @@
 
 /* Begin PBXFileReference section */
 		3D0F0D1AE86179C9083CFDD0 /* LibreSensorExport.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = LibreSensorExport.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		707DECC4316EE56DB859582A /* SensorMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorMetadata.swift; sourceTree = "<group>"; };
 		75A7B585CD6C540E5D03CEAB /* NFCReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NFCReader.swift; sourceTree = "<group>"; };
 		8C585FD214D3C3182DDC2683 /* SensorExportApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorExportApp.swift; sourceTree = "<group>"; };
 		9AC8E29365578380136B3A2D /* Libre2FRAM.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Libre2FRAM.swift; sourceTree = "<group>"; };
 		A257889CE8315E4251EFCF0D /* TablesData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TablesData.swift; sourceTree = "<group>"; };
 		AD53C2E28BA964B2791F6808 /* SensorParse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorParse.swift; sourceTree = "<group>"; };
+		BE55673816A06EA13682D8F6 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
+		BE60218E499064A3EC781BC5 /* Local.xcconfig.example */ = {isa = PBXFileReference; path = Local.xcconfig.example; sourceTree = "<group>"; };
 		C17AAC495FA295892A6C117A /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
+		4A06D89C45A744A1E57AFA77 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				BE55673816A06EA13682D8F6 /* Config.xcconfig */,
+				BE60218E499064A3EC781BC5 /* Local.xcconfig.example */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
 		4E1F03CB9BDBB705C90FC270 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
@@ -33,6 +46,7 @@
 				9AC8E29365578380136B3A2D /* Libre2FRAM.swift */,
 				75A7B585CD6C540E5D03CEAB /* NFCReader.swift */,
 				8C585FD214D3C3182DDC2683 /* SensorExportApp.swift */,
+				707DECC4316EE56DB859582A /* SensorMetadata.swift */,
 				AD53C2E28BA964B2791F6808 /* SensorParse.swift */,
 				A257889CE8315E4251EFCF0D /* TablesData.swift */,
 			);
@@ -50,6 +64,7 @@
 		9B5BBDBD733FF00ABE4F6455 = {
 			isa = PBXGroup;
 			children = (
+				4A06D89C45A744A1E57AFA77 /* Config */,
 				4E1F03CB9BDBB705C90FC270 /* Sources */,
 				592254C9FEBD17A3EC275B51 /* Products */,
 			);
@@ -85,7 +100,7 @@
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
 					95F61C41DB244C00EDE92F62 = {
-						DevelopmentTeam = YOURTEAMID;
+						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -118,6 +133,7 @@
 				459C4347197662DD1ABC9EE4 /* Libre2FRAM.swift in Sources */,
 				F9C57B3E46E2E2C273CF73CB /* NFCReader.swift in Sources */,
 				5281804A2EC9A5D47D1C7F66 /* SensorExportApp.swift in Sources */,
+				021ABC86B011408C94358A9D /* SensorMetadata.swift in Sources */,
 				BF91077E3CD43B4A69BAF99E /* SensorParse.swift in Sources */,
 				F8AC50EEEC959A1E191FDFF4 /* TablesData.swift in Sources */,
 			);
@@ -247,20 +263,20 @@
 		};
 		7F8B27464C83AB2B1C1277A6 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = BE55673816A06EA13682D8F6 /* Config.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Generated/LibreSensorExport.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = YOURTEAMID;
 				INFOPLIST_FILE = Generated/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = org.libresensorexport.app;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(LIBRE_EXPORT_BUNDLE_ID)";
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
@@ -269,20 +285,20 @@
 		};
 		8689B5A80D4CDE98DD28E70C /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = BE55673816A06EA13682D8F6 /* Config.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Generated/LibreSensorExport.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = YOURTEAMID;
 				INFOPLIST_FILE = Generated/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = org.libresensorexport.app;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(LIBRE_EXPORT_BUNDLE_ID)";
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
